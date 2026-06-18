@@ -1,58 +1,29 @@
 // ---------------------------------------------------------------------------
-//  api.js — REST-Zugriff mit stateless Username/Passwort-Authentifizierung
+//  api.js – REST-Zugriff über HTTP Basic (Benutzername + Passwort)
+//
+//  Es gibt KEINE Tokens und KEINE Sessions. Nach erfolgreicher Anmeldung werden
+//  die Zugangsdaten (als base64 „user:pass") in der sessionStorage gehalten und
+//  bei jeder Anfrage im Header  Authorization: Basic ...  mitgesendet. Beim
+//  Schließen des Tabs sind sie wieder weg.
 // ---------------------------------------------------------------------------
-const CREDENTIALS_KEY = 'ef_credentials';
+const CRED_KEY = 'ef_basic';
 
-export function getCredentials() {
-  try {
-    const raw = localStorage.getItem(CREDENTIALS_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.username || !parsed?.password) return null;
-    return { username: String(parsed.username), password: String(parsed.password) };
-  } catch {
-    return null;
-  }
-}
+// UTF-8-sicheres base64 (für Umlaute in Name/Passwort)
+const toB64 = (s) => btoa(unescape(encodeURIComponent(s)));
 
-export function setCredentials(credentials) {
-  if (!credentials?.username || !credentials?.password) {
-    localStorage.removeItem(CREDENTIALS_KEY);
-    return;
-  }
-  localStorage.setItem(CREDENTIALS_KEY, JSON.stringify({
-    username: String(credentials.username),
-    password: String(credentials.password),
-  }));
-}
-
-export function clearCredentials() {
-  localStorage.removeItem(CREDENTIALS_KEY);
-}
-
-function toBasicAuth(username, password) {
-  const encoded = new TextEncoder().encode(`${username}:${password}`);
-  let binary = '';
-  for (const byte of encoded) binary += String.fromCharCode(byte);
-  return `Basic ${btoa(binary)}`;
-}
+export const setCredentials = (username, password) => sessionStorage.setItem(CRED_KEY, toB64(`${username}:${password}`));
+export const clearCredentials = () => sessionStorage.removeItem(CRED_KEY);
+export const getBasic = () => sessionStorage.getItem(CRED_KEY);
+export const hasCredentials = () => !!getBasic();
 
 async function req(method, path, body) {
   const headers = { 'Content-Type': 'application/json' };
-  const credentials = getCredentials();
-  if (credentials) headers.Authorization = toBasicAuth(credentials.username, credentials.password);
-
-  const res = await fetch(path, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
+  const basic = getBasic();
+  if (basic) headers.Authorization = 'Basic ' + basic;
+  const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (res.status === 401) clearCredentials();
   const text = await res.text();
-  let data = null;
-  if (text) {
-    try { data = JSON.parse(text); } catch { data = null; }
-  }
+  const data = text ? JSON.parse(text) : null;
   if (!res.ok) throw new Error((data && data.error) || `Fehler ${res.status}`);
   return data;
 }
@@ -62,10 +33,10 @@ export const api = {
   post: (p, b) => req('POST', p, b),
   patch: (p, b) => req('PATCH', p, b),
 
-  // Auth
-  login: (username, password) => req('POST', '/auth/login', { username, password }),
-  register: (payload) => req('POST', '/auth/register', payload),
-  me: () => req('GET', '/auth/me'),
+  // Authentifizierung
+  register: (username, password, name) => req('POST', '/api/auth/register', { username, password, name }),
+  login: () => req('POST', '/api/auth/login'),   // prüft die gespeicherten Zugangsdaten
+  me: () => req('GET', '/api/auth/me'),
 
   // Projekte
   createProject: (d) => req('POST', '/api/projects', d),

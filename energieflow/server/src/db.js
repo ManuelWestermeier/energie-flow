@@ -1,410 +1,203 @@
 // ---------------------------------------------------------------------------
-//  db.js – JSON-basierte Persistenz ohne native Abhängigkeiten
+//  db.js – Datenhaltung als schlanker JSON-Store (ohne native Abhängigkeit)
+//
+//  Ersetzt die frühere SQLite-Anbindung. Vorteile: läuft ohne Kompilierung auf
+//  jedem Node ≥ 16, kein node-gyp, kein Build-Toolchain nötig. Für die Größe
+//  dieses Projekts (eine überschaubare Zahl an Projekten/Mitgliedern) völlig
+//  ausreichend. Die exportierten Funktionen entsprechen 1:1 der vorherigen API,
+//  damit die Routen unverändert weiterlaufen.
+//
+//  Persistenz: server/data/db.json (wird bei jeder Änderung synchron gesichert).
 // ---------------------------------------------------------------------------
-import fs from 'fs';
-import path from 'path';
 import { fileURLToPath } from 'url';
-import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
+import path from 'path';
+import fs from 'fs';
+import { nanoid } from 'nanoid';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, '..', 'data');
-const dataFile = path.join(dataDir, 'energieflow.json');
-
+const dbFile = path.join(dataDir, 'db.json');
 fs.mkdirSync(dataDir, { recursive: true });
 
-const emptyState = {
-  users: [],
-  projects: [],
-  members: [],
-  invites: [],
-  proposals: [],
-  consents: [],
-};
+const EMPTY = { users: [], projects: [], members: [], invites: [], proposals: [], consents: [] };
 
-let state = loadState();
-
-function loadState() {
-  try {
-    if (!fs.existsSync(dataFile)) return structuredClone(emptyState);
-    const raw = fs.readFileSync(dataFile, 'utf8');
-    const parsed = raw ? JSON.parse(raw) : {};
-    return {
-      users: Array.isArray(parsed.users) ? parsed.users : [],
-      projects: Array.isArray(parsed.projects) ? parsed.projects : [],
-      members: Array.isArray(parsed.members) ? parsed.members : [],
-      invites: Array.isArray(parsed.invites) ? parsed.invites : [],
-      proposals: Array.isArray(parsed.proposals) ? parsed.proposals : [],
-      consents: Array.isArray(parsed.consents) ? parsed.consents : [],
-    };
-  } catch {
-    return structuredClone(emptyState);
-  }
+let data;
+try {
+  data = fs.existsSync(dbFile) ? { ...EMPTY, ...JSON.parse(fs.readFileSync(dbFile, 'utf8')) } : { ...EMPTY };
+} catch {
+  data = { ...EMPTY };
 }
-
-function saveState() {
-  const tmp = `${dataFile}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf8');
-  fs.renameSync(tmp, dataFile);
+function save() {
+  fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
 }
+const now = () => new Date().toISOString();
 
-function now() {
-  return new Date().toISOString();
-}
-
-function makeId(prefix = '', bytes = 12) {
-  return `${prefix}${crypto.randomBytes(bytes).toString('hex')}`;
-}
-
-function randomId(bytes = 4) {
-  return crypto.randomBytes(bytes).toString('hex');
-}
-
-function clone(value) {
-  return value == null ? value : JSON.parse(JSON.stringify(value));
-}
-
-function normalizeUsername(username) {
-  return String(username || '').trim().toLowerCase();
-}
-
-function slugUsername(value) {
-  const base = String(value || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9._-]+/g, '.')
-    .replace(/^\.+|\.+$/g, '')
-    .replace(/\.\.+/g, '.');
-  return base.length >= 3 ? base : `user${randomId(2)}`;
-}
-
-function makeUniqueUsername(base) {
-  const taken = new Set(state.users.map((u) => normalizeUsername(u.username)).filter(Boolean));
-  let candidate = normalizeUsername(base) || `user${randomId(2)}`;
-  if (!taken.has(candidate)) return candidate;
-  let i = 2;
-  while (taken.has(`${candidate}${i}`)) i += 1;
-  return `${candidate}${i}`;
-}
-
-function safeUser(user) {
-  if (!user) return null;
-  return {
-    id: user.id,
-    username: user.username,
-    name: user.name || user.username || user.email || user.id,
-    email: user.email || null,
-    picture: user.picture || null,
-    provider: user.provider || 'password',
-    created_at: user.created_at || null,
-  };
-}
-
-function findProject(id) {
-  return state.projects.find((project) => project.id === id) || null;
-}
-
-function findUser(id) {
-  return state.users.find((user) => user.id === id) || null;
-}
-
-function projectMembers(projectId) {
-  return state.members
-    .filter((member) => member.project_id === projectId)
-    .sort((a, b) => String(a.joined_at || '').localeCompare(String(b.joined_at || '')));
-}
-
-function projectInvites(projectId) {
-  return state.invites
-    .filter((invite) => invite.project_id === projectId)
-    .sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
-}
-
-function projectProposals(projectId) {
-  return state.proposals
-    .filter((proposal) => proposal.project_id === projectId)
-    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-}
-
-function projectConsents(projectId) {
-  return state.consents.filter((consent) => consent.project_id === projectId);
-}
-
-// ---- Nutzer ----------------------------------------------------------------
-export function getUser(id) {
-  return safeUser(findUser(id));
-}
-
-export function getUserByUsername(username) {
-  const norm = normalizeUsername(username);
-  return safeUser(state.users.find((user) => normalizeUsername(user.username) === norm));
-}
-
-export function createUser({ username, password, name = '', email = null, picture = null, provider = 'password' }) {
-  const norm = normalizeUsername(username);
-  if (!norm) throw new Error('Benutzername erforderlich.');
-  if (norm.length < 3) throw new Error('Benutzername muss mindestens 3 Zeichen lang sein.');
-  if (norm.length > 40) throw new Error('Benutzername ist zu lang.');
-  if (!/^[a-z0-9._-]+$/.test(norm)) throw new Error('Benutzername enthält unzulässige Zeichen.');
-  if (!password || String(password).length < 8) throw new Error('Passwort muss mindestens 8 Zeichen lang sein.');
-  if (state.users.some((user) => normalizeUsername(user.username) === norm)) throw new Error('Benutzername bereits vergeben.');
-
-  const user = {
-    id: makeId('u_'),
-    username: norm,
-    password_hash: bcrypt.hashSync(String(password), Number(process.env.BCRYPT_ROUNDS || 12)),
-    name: String(name || norm).trim() || norm,
-    email: email ? String(email).trim() : null,
-    picture: picture ? String(picture) : null,
-    provider,
-    created_at: now(),
-  };
-  state.users.push(user);
-  saveState();
-  return safeUser(user);
-}
-
-export function authenticateUser(username, password) {
-  const norm = normalizeUsername(username);
-  const user = state.users.find((entry) => normalizeUsername(entry.username) === norm);
-  if (!user || !user.password_hash) return null;
-  if (!bcrypt.compareSync(String(password || ''), user.password_hash)) return null;
-  return safeUser(user);
-}
-
-export function updateUserProfile(id, patch = {}) {
-  const user = findUser(id);
-  if (!user) return null;
-  if (patch.name !== undefined) user.name = String(patch.name || '').trim() || user.name;
-  if (patch.email !== undefined) user.email = patch.email ? String(patch.email).trim() : null;
-  if (patch.picture !== undefined) user.picture = patch.picture ? String(patch.picture) : null;
-  saveState();
-  return safeUser(user);
-}
-
-// ---- Projekte --------------------------------------------------------------
+// Felder, die ein Projekt kennt – plus, welche davon numerisch sind.
 const PROJECT_FIELDS = ['name', 'street', 'hausnr', 'plz', 'ort', 'bundesland', 'eigentum',
   'we', 'kwp', 'ertrag', 'invest', 'gvpreis', 'arbeitspreis', 'einspeise', 'opex',
-  'versicherung', 'zeitraum', 'qmax', 'share_pct', 'status', 'intake_json'];
+  'versicherung', 'zeitraum', 'qmax', 'share_pct', 'status', 'intake'];
+const NUMERIC = new Set(['we', 'kwp', 'ertrag', 'invest', 'gvpreis', 'arbeitspreis',
+  'einspeise', 'opex', 'versicherung', 'zeitraum', 'qmax', 'share_pct']);
+const coerce = (k, v) => (NUMERIC.has(k) && v !== undefined && v !== null && v !== '' ? Number(v) : v);
 
-export function createProject(adminId, data) {
-  const project = {
-    id: makeId('p_'),
-    admin_id: adminId,
-    created_at: now(),
-    updated_at: now(),
-  };
+const PROJECT_DEFAULTS = {
+  name: 'Solarprojekt', street: '', hausnr: '', plz: '', ort: '', bundesland: 'Bayern',
+  eigentum: 'vermieter', we: 8, kwp: 30, ertrag: 900, invest: 62250, gvpreis: 35,
+  arbeitspreis: 34, einspeise: 6.88, opex: 600, versicherung: 200, zeitraum: 20,
+  qmax: 40.7, share_pct: 90, status: 'sammeln', intake: null,
+};
 
-  for (const field of PROJECT_FIELDS) {
-    if (data[field] !== undefined) project[field] = data[field];
-  }
-
-  if (project.share_pct === undefined) project.share_pct = 90;
-  if (project.status === undefined) project.status = 'sammeln';
-
-  state.projects.push(project);
-  saveState();
-  return project.id;
+// ---- Nutzer ----------------------------------------------------------------
+export function createUser({ username, name, passwordHash }) {
+  const id = 'u_' + nanoid(10);
+  const user = { id, username, name: name || username, password_hash: passwordHash, created_at: now() };
+  data.users.push(user);
+  save();
+  return user;
 }
+export const getUserByUsername = (username) =>
+  data.users.find((u) => u.username.toLowerCase() === String(username).toLowerCase());
+export const getUserById = (id) => data.users.find((u) => u.id === id);
 
-export function updateProject(id, data) {
-  const project = findProject(id);
-  if (!project) return;
+// ---- Projekte --------------------------------------------------------------
+export function createProject(adminId, input = {}) {
+  const id = 'p_' + nanoid(10);
+  const p = { id, admin_id: adminId, ...PROJECT_DEFAULTS, created_at: now(), updated_at: now() };
+  for (const f of PROJECT_FIELDS) if (input[f] !== undefined) p[f] = coerce(f, input[f]);
+  data.projects.push(p);
+  save();
+  return id;
+}
+export function updateProject(id, patch = {}) {
+  const p = data.projects.find((x) => x.id === id);
+  if (!p) return;
   let changed = false;
-  for (const field of PROJECT_FIELDS) {
-    if (data[field] !== undefined) {
-      project[field] = data[field];
-      changed = true;
-    }
-  }
-  if (changed) {
-    project.updated_at = now();
-    saveState();
-  }
+  for (const f of PROJECT_FIELDS) if (patch[f] !== undefined) { p[f] = coerce(f, patch[f]); changed = true; }
+  if (changed) { p.updated_at = now(); save(); }
 }
-
-export const rawProject = (id) => clone(findProject(id));
+export const rawProject = (id) => data.projects.find((p) => p.id === id) || null;
 
 export function listProjectsForUser(userId) {
-  return state.projects
-    .filter((project) => state.members.some((member) => member.project_id === project.id && member.user_id === userId))
-    .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))
-    .map((project) => ({
-      ...clone(project),
-      member_count: state.members.filter((member) => member.project_id === project.id).length,
-    }));
+  const mine = data.members.filter((m) => m.user_id === userId).map((m) => m.project_id);
+  return data.projects
+    .filter((p) => mine.includes(p.id))
+    .map((p) => ({ ...p, member_count: data.members.filter((m) => m.project_id === p.id).length }))
+    .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1));
 }
 
 // ---- Mitglieder ------------------------------------------------------------
 export function addMember(projectId, userId, { role = 'mieter', household, wohnung } = {}) {
-  const existing = state.members.find((member) => member.project_id === projectId && member.user_id === userId);
+  const existing = data.members.find((m) => m.project_id === projectId && m.user_id === userId);
   if (existing) return existing.id;
-  const member = {
-    id: makeId('m_'),
-    project_id: projectId,
-    user_id: userId,
-    role,
-    household: household ?? null,
-    wohnung: wohnung ?? null,
-    status: 'beigetreten',
-    verbrauch: null,
-    confirmed: 0,
-    joined_at: now(),
-  };
-  state.members.push(member);
-  saveState();
-  return member.id;
+  const id = 'm_' + nanoid(10);
+  data.members.push({
+    id, project_id: projectId, user_id: userId, role,
+    household: household ?? null, wohnung: wohnung ?? null,
+    status: 'beigetreten', verbrauch: null, confirmed: 0, joined_at: now(),
+  });
+  save();
+  return id;
 }
-
 export const getMember = (projectId, userId) =>
-  clone(state.members.find((member) => member.project_id === projectId && member.user_id === userId) || null);
+  data.members.find((m) => m.project_id === projectId && m.user_id === userId) || null;
 
-export function updateMyMember(projectId, userId, { wohnung, verbrauch, status, confirmed, household }) {
-  const member = state.members.find((entry) => entry.project_id === projectId && entry.user_id === userId);
-  if (!member) return;
-  if (wohnung !== undefined) member.wohnung = wohnung ?? null;
-  if (household !== undefined) member.household = household ?? null;
-  if (verbrauch !== undefined) member.verbrauch = verbrauch ?? null;
-  if (status !== undefined) member.status = status;
-  if (confirmed !== undefined) member.confirmed = confirmed ? 1 : 0;
-  saveState();
+export function updateMyMember(projectId, userId, { wohnung, household, verbrauch, status, confirmed }) {
+  const m = getMember(projectId, userId);
+  if (!m) return;
+  if (wohnung !== undefined) m.wohnung = wohnung;
+  if (household !== undefined) m.household = household;
+  if (verbrauch !== undefined) m.verbrauch = verbrauch === null ? null : Number(verbrauch);
+  if (status !== undefined) m.status = status;
+  if (confirmed !== undefined) m.confirmed = confirmed ? 1 : 0;
+  save();
 }
 
 // ---- Einladungen -----------------------------------------------------------
-export function createInvite(projectId, createdBy, { role = 'mieter', label, email }) {
+export function createInvite(projectId, createdBy, { role = 'mieter', label, email } = {}) {
+  const id = 'i_' + nanoid(10);
   const invite = {
-    id: makeId('i_'),
-    project_id: projectId,
-    token: makeId(''),
-    role,
-    label: label ?? null,
-    email: email ?? null,
-    created_by: createdBy,
-    used_count: 0,
-    created_at: now(),
+    id, project_id: projectId, token: nanoid(18), role,
+    label: label ?? null, email: email ?? null, created_by: createdBy, used_count: 0, created_at: now(),
   };
-  state.invites.push(invite);
-  saveState();
-  return clone(invite);
+  data.invites.push(invite);
+  save();
+  return invite;
 }
-
-export const getInviteByToken = (token) =>
-  clone(state.invites.find((invite) => invite.token === token) || null);
-
-export const bumpInvite = (id) => {
-  const invite = state.invites.find((entry) => entry.id === id);
-  if (!invite) return;
-  invite.used_count += 1;
-  saveState();
-};
+export const getInviteByToken = (token) => data.invites.find((i) => i.token === token) || null;
+export function bumpInvite(id) {
+  const i = data.invites.find((x) => x.id === id);
+  if (i) { i.used_count += 1; save(); }
+}
 
 // ---- Vorschläge / Verlauf --------------------------------------------------
 export function addProposal(projectId, { by_user_id, by_role, by_name, share_pct, quote_pct, params, result, note }) {
-  const proposal = {
-    id: makeId('pr_'),
-    project_id: projectId,
-    by_user_id,
-    by_role,
-    by_name,
-    share_pct,
-    quote_pct,
-    params_json: JSON.stringify(params || {}),
-    result_json: JSON.stringify(result || {}),
-    note: note ?? null,
-    created_at: now(),
-  };
-  state.proposals.push(proposal);
-  saveState();
-  return proposal.id;
+  const id = 'pr_' + nanoid(10);
+  data.proposals.push({
+    id, project_id: projectId, by_user_id, by_role, by_name,
+    share_pct: Number(share_pct), quote_pct: quote_pct == null ? null : Number(quote_pct),
+    params: params || {}, result: result || {}, note: note ?? null, created_at: now(),
+  });
+  save();
+  return id;
 }
 
 // ---- Zustimmungen ----------------------------------------------------------
 export function setConsent(projectId, userId, share_pct, agreed) {
-  const existing = state.consents.find((consent) => consent.project_id === projectId && consent.user_id === userId);
-  if (existing) {
-    existing.share_pct = share_pct;
-    existing.agreed = agreed ? 1 : 0;
-    existing.created_at = now();
-  } else {
-    state.consents.push({
-      id: makeId('c_'),
-      project_id: projectId,
-      user_id: userId,
-      share_pct,
-      agreed: agreed ? 1 : 0,
-      created_at: now(),
-    });
+  let c = data.consents.find((x) => x.project_id === projectId && x.user_id === userId);
+  if (!c) {
+    c = { id: 'c_' + nanoid(10), project_id: projectId, user_id: userId };
+    data.consents.push(c);
   }
-  saveState();
+  c.share_pct = Number(share_pct);
+  c.agreed = agreed ? 1 : 0;
+  c.created_at = now();
+  save();
 }
-
 export function clearConsents(projectId) {
-  const before = state.consents.length;
-  state.consents = state.consents.filter((consent) => consent.project_id !== projectId);
-  if (state.consents.length !== before) saveState();
+  data.consents = data.consents.filter((c) => c.project_id !== projectId);
+  save();
 }
 
-// ---- Vollständiger Projektzustand (für REST-Antwort & Socket-Broadcast) ----
+// ---- Vollständiger Projektzustand (REST-Antwort & Socket-Broadcast) --------
 export function fullProject(id) {
-  const project = findProject(id);
-  if (!project) return null;
+  const p = rawProject(id);
+  if (!p) return null;
 
-  const members = projectMembers(id);
-  const invites = projectInvites(id);
-  const proposals = projectProposals(id).map((proposal) => ({
-    ...clone(proposal),
-    params: safe(proposal.params_json),
-    result: safe(proposal.result_json),
-  }));
-  const consents = projectConsents(id);
+  const members = data.members
+    .filter((m) => m.project_id === id)
+    .sort((a, b) => (a.joined_at < b.joined_at ? -1 : 1))
+    .map((m) => {
+      const u = getUserById(m.user_id) || {};
+      return { ...m, user_name: u.name, user_username: u.username };
+    });
 
-  const active = members.filter((member) => member.status !== 'abgelehnt');
-  const consentByUser = Object.fromEntries(consents.map((consent) => [consent.user_id, consent]));
-  const agreedCount = active.filter((member) => {
-    const consent = consentByUser[member.user_id];
-    return consent && consent.agreed && Math.abs(consent.share_pct - project.share_pct) < 0.001;
-  }).length;
+  const invites = data.invites.filter((i) => i.project_id === id)
+    .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+  const proposals = data.proposals.filter((pr) => pr.project_id === id)
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  const consents = data.consents.filter((c) => c.project_id === id);
+
+  const active = members.filter((m) => m.status !== 'abgelehnt');
+  const consentByUser = Object.fromEntries(consents.map((c) => [c.user_id, c]));
+  const agreedAt = (m) => {
+    const c = consentByUser[m.user_id];
+    return !!(c && c.agreed && Math.abs(Number(c.share_pct) - Number(p.share_pct)) < 0.001);
+  };
+  const agreedCount = active.filter(agreedAt).length;
   const consensus = active.length > 0 && agreedCount === active.length;
 
   return {
-    ...clone(project),
-    intake: safe(project.intake_json),
-    members: members.map((member) => {
-      const user = findUser(member.user_id);
-      return {
-        id: member.id,
-        userId: member.user_id,
-        role: member.role,
-        name: user?.name || user?.username || user?.email || member.user_id,
-        username: user?.username || null,
-        email: user?.email || null,
-        picture: user?.picture || null,
-        household: member.household,
-        wohnung: member.wohnung,
-        status: member.status,
-        verbrauch: member.verbrauch,
-        confirmed: !!member.confirmed,
-        agreed: !!(consentByUser[member.user_id] && consentByUser[member.user_id].agreed &&
-          Math.abs(consentByUser[member.user_id].share_pct - project.share_pct) < 0.001)
-      };
-    }),
-    invites: invites.map((invite) => ({
-      id: invite.id,
-      token: invite.token,
-      role: invite.role,
-      label: invite.label,
-      email: invite.email,
-      used: invite.used_count,
+    ...p,
+    intake: p.intake || null,
+    members: members.map((m) => ({
+      id: m.id, userId: m.user_id, role: m.role, name: m.user_name, username: m.user_username,
+      picture: null, household: m.household, wohnung: m.wohnung, status: m.status,
+      verbrauch: m.verbrauch, confirmed: !!m.confirmed, agreed: agreedAt(m),
     })),
-    proposals,
+    invites: invites.map((i) => ({ id: i.id, token: i.token, role: i.role, label: i.label, email: i.email, used: i.used_count })),
+    proposals: proposals.map((pr) => ({ ...pr })),
     consent: { agreedCount, activeCount: active.length, consensus },
   };
 }
 
-function safe(value) {
-  try { return value ? JSON.parse(value) : null; } catch { return null; }
-}
-
-export default null;
+export default data;

@@ -1,52 +1,40 @@
 // ---------------------------------------------------------------------------
-//  routes/auth.js – Login / Registrierung / aktueller Benutzer
+//  routes/auth.js – Registrierung & Anmeldung (Benutzername + Passwort)
+//  Keine Tokens, keine Sessions: Login prüft nur die Zugangsdaten; die
+//  Anwendung sendet sie anschließend bei jeder Anfrage per HTTP Basic mit.
 // ---------------------------------------------------------------------------
 import { Router } from 'express';
-import { createUser, authenticateUser } from '../db.js';
-import { requireAuth, safeUser } from '../auth.js';
+import { requireAuth, hashPassword } from '../auth.js';
+import { getUserByUsername, createUser } from '../db.js';
 
 const router = Router();
+const profile = (u) => ({ id: u.id, username: u.username, name: u.name });
 
-function sanitizeInput(value) {
-  return String(value || '').trim();
-}
+const USERNAME_RE = /^[A-Za-z0-9_.\-]{3,32}$/;
 
-router.post('/auth/register', (req, res) => {
-  try {
-    const username = sanitizeInput(req.body?.username).toLowerCase();
-    const password = String(req.body?.password || '');
-    const name = sanitizeInput(req.body?.name);
-    const email = sanitizeInput(req.body?.email) || null;
+// Registrierung
+router.post('/api/auth/register', async (req, res) => {
+  const { username, password, name } = req.body || {};
+  if (!username || !USERNAME_RE.test(username))
+    return res.status(400).json({ error: 'Benutzername: 3–32 Zeichen, nur Buchstaben, Ziffern, . _ -' });
+  if (!password || String(password).length < 6)
+    return res.status(400).json({ error: 'Das Passwort muss mindestens 6 Zeichen haben.' });
+  if (getUserByUsername(username))
+    return res.status(409).json({ error: 'Dieser Benutzername ist bereits vergeben.' });
 
-    const user = createUser({
-      username,
-      password,
-      name: name || username,
-      email,
-      provider: 'password',
-    });
-
-    res.status(201).json({ user: safeUser(user) });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Registrierung fehlgeschlagen.';
-    const status = /bereits vergeben/i.test(message) ? 409 : 400;
-    res.status(status).json({ error: message });
-  }
+  const passwordHash = await hashPassword(String(password));
+  const user = createUser({ username, name: (name || '').trim() || username, passwordHash });
+  res.status(201).json(profile(user));
 });
 
-router.post('/auth/login', (req, res) => {
-  const username = sanitizeInput(req.body?.username).toLowerCase();
-  const password = String(req.body?.password || '');
-  const user = authenticateUser(username, password);
-  if (!user) return res.status(401).json({ error: 'Benutzername oder Passwort ungültig.' });
-  res.json({ user: safeUser(user) });
+// Anmeldung – prüft die per Basic-Header gesendeten Zugangsdaten.
+router.post('/api/auth/login', requireAuth, (req, res) => {
+  res.json(profile(req.user));
 });
 
-router.get('/auth/me', requireAuth, (req, res) => {
-  res.json(req.user);
+// Aktuelles Profil (validiert ebenfalls die Zugangsdaten).
+router.get('/api/auth/me', requireAuth, (req, res) => {
+  res.json(profile(req.user));
 });
 
-router.post('/auth/refresh', requireAuth, (req, res) => {
-  res.json(req.user);
-});
 export default router;

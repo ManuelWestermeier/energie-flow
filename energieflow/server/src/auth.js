@@ -1,68 +1,71 @@
 // ---------------------------------------------------------------------------
-//  auth.js – klassische Username/Passwort-Authentifizierung
-//  Stateless: keine Sessions, keine JWTs, keine OAuth-Komponenten.
+//  auth.js – Authentifizierung über Benutzername + Passwort
+//
+//  Bewusste Architektur (laut Vorgabe):
+//   • KEIN JWT, KEIN JWT_SECRET, KEINE Sessions, KEINE Tokens, KEIN OAuth.
+//   • Passwörter werden mit bcrypt gehasht gespeichert (bcryptjs = reine
+//     JS-Implementierung desselben Algorithmus, ohne nativen Build).
+//   • Authentifizierung per HTTP Basic: Benutzername + Passwort werden bei
+//     jeder Anfrage mitgesendet (Header  Authorization: Basic base64(user:pass))
+//     und serverseitig gegen den bcrypt-Hash geprüft.
+//
+//  Sicherheitshinweis: Da bei diesem token-/session-losen Verfahren die
+//  Zugangsdaten mit jeder Anfrage übertragen werden, MUSS im Produktivbetrieb
+//  zwingend HTTPS/TLS verwendet werden.
 // ---------------------------------------------------------------------------
-import { authenticateUser } from './db.js';
+import bcrypt from 'bcryptjs';
+import { getUserByUsername } from './db.js';
 
-function parseBasicAuth(header) {
-  if (!header || !header.startsWith('Basic ')) return null;
+const ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 10;
+
+export const hashPassword = (plain) => bcrypt.hash(plain, ROUNDS);
+
+// Base64-„user:pass" dekodieren (UTF-8-sicher)
+function decodeBasic(b64) {
   try {
-    const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
-    const idx = decoded.indexOf(':');
-    if (idx < 0) return null;
-    return {
-      username: decoded.slice(0, idx),
-      password: decoded.slice(idx + 1),
-    };
-  } catch {
+    const raw = Buffer.from(String(b64), 'base64').toString('utf8');
+    const i = raw.indexOf(':');
+    if (i < 0) return null;
+    return { username: raw.slice(0, i), password: raw.slice(i + 1) };
+  } catch { return null; }
+}
+
+function fromAuthHeader(header) {
+  if (!header || !header.startsWith('Basic ')) return null;
+  return decodeBasic(header.slice(6));
+}
+
+// Zugangsdaten prüfen -> Nutzer oder null
+export async function verifyCredentials(username, password) {
+  if (!username || !password) return null;
+  const user = getUserByUsername(username);
+  if (!user) {
+    // Konstante Arbeit, um Timing-Unterschiede (Nutzer existiert/nicht) zu glätten.
+    await bcrypt.compare(password, '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinv');
     return null;
   }
+  const ok = await bcrypt.compare(password, user.password_hash);
+  return ok ? user : null;
 }
 
-export function safeUser(user) {
-  if (!user) return null;
-  return {
-    id: user.id,
-    username: user.username,
-    name: user.name,
-    email: user.email,
-    picture: user.picture,
-  };
-}
-
-export function credentialsFromRequest(req) {
-  return parseBasicAuth(req.headers.authorization || '');
-}
-
-export function credentialsFromSocket(socket) {
-  const auth = socket.handshake?.auth || {};
-  if (typeof auth.username !== 'string' || typeof auth.password !== 'string') return null;
-  return { username: auth.username, password: auth.password };
-}
-
-export function requireAuth(req, res, next) {
-  const creds = credentialsFromRequest(req);
-  if (!creds) {
-    res.set('WWW-Authenticate', 'Basic realm="EnergieFlow", charset="UTF-8"');
-    return res.status(401).json({ error: 'Nicht angemeldet.' });
-  }
-
-  const user = authenticateUser(creds.username, creds.password);
-  if (!user) {
-    res.set('WWW-Authenticate', 'Basic realm="EnergieFlow", charset="UTF-8"');
-    return res.status(401).json({ error: 'Benutzername oder Passwort ungültig.' });
-  }
-
-  req.user = safeUser(user);
+// REST-Middleware: erwartet  Authorization: Basic <base64(user:pass)>
+export async function requireAuth(req, res, next) {
+  const creds = fromAuthHeader(req.headers.authorization);
+  if (!creds) return res.status(401).json({ error: 'Nicht angemeldet.' });
+  const user = await verifyCredentials(creds.username, creds.password);
+  if (!user) return res.status(401).json({ error: 'Benutzername oder Passwort falsch.' });
+  req.user = user;
   next();
 }
 
-export function socketAuth(socket, next) {
-  const creds = credentialsFromSocket(socket);
+// Socket.IO-Middleware: Zugangsdaten kommen im Handshake (auth.basic).
+export async function socketAuth(socket, next) {
+  const a = socket.handshake.auth || {};
+  const creds = a.basic ? decodeBasic(a.basic)
+    : (a.username ? { username: a.username, password: a.password } : null);
   if (!creds) return next(new Error('unauthorized'));
-  const user = authenticateUser(creds.username, creds.password);
+  const user = await verifyCredentials(creds.username, creds.password);
   if (!user) return next(new Error('unauthorized'));
   socket.userId = user.id;
-  socket.user = safeUser(user);
   next();
 }

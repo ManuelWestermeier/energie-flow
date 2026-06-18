@@ -73,7 +73,7 @@ export default function Join() {
                 <button onClick={join} disabled={busy} className="btn-primary w-full !py-3">
                   {busy ? 'Trete bei …' : 'Projekt beitreten'} <ArrowRight className="h-4 w-4" />
                 </button>
-                <p className="text-[12px] text-ink-faint mt-3">Angemeldet als {user.username}.</p>
+                <p className="text-[12px] text-ink-faint mt-3">Angemeldet als {user.email}.</p>
               </>
             ) : (
               <>

@@ -25,3 +25,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+// Leichter Service Worker (PWA) – nur außerhalb von localhost registrieren,
+// damit der Entwicklungsmodus nie veraltete Inhalte ausliefert.
+if ('serviceWorker' in navigator) {
+  const host = location.hostname;
+  const local = host === 'localhost' || host === '127.0.0.1' || host === '';
+  if (!local) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  }
+}
