@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; }
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    line-height: 1.62;
+    /* sehr dezente Sonnen-Atmosphäre im Hintergrund */
+    background-image:
+      radial-gradient(1100px 520px at 88% -8%, rgba(232,133,31,.10), transparent 60%),
+      radial-gradient(900px 520px at -6% 4%, rgba(79,157,46,.10), transparent 55%);
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4 { @apply font-display text-ink; letter-spacing: -0.012em; }
+  ::selection { background: #d9ecca; }
+  *:focus-visible { outline: 2px solid #4f9d2e; outline-offset: 2px; border-radius: 6px; }
+}
+
+@layer components {
+  .wrap { @apply max-w-content mx-auto px-5 sm:px-8; }
+  .card { @apply bg-white border border-line rounded-2xl shadow-soft; }
+  .pill { @apply inline-flex items-center gap-1.5 text-[12px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded-full bg-green-soft text-green-deep; }
+  .pill-amber { @apply bg-amber-soft text-amber-deep; }
+  .pill-ghost { @apply bg-paper-2 text-ink-soft; }
+  .label { @apply block text-[13px] font-semibold text-ink-soft mb-1.5; }
+  .input {
+    @apply w-full rounded-xl border border-line bg-paper/60 px-3.5 py-2.5 text-[15px] text-ink
+           placeholder:text-ink-faint transition focus:border-green focus:bg-white focus:ring-2 focus:ring-green/15;
+  }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition active:scale-[.985] disabled:opacity-50 disabled:pointer-events-none; }
+  .btn-primary { @apply btn bg-green-deep text-white px-5 py-2.5 hover:bg-green-ink shadow-soft; }
+  .btn-amber { @apply btn bg-amber text-white px-5 py-2.5 hover:bg-amber-deep shadow-soft; }
+  .btn-ghost { @apply btn bg-white border border-line text-ink px-4 py-2.5 hover:border-line-strong hover:bg-paper-2; }
+  .btn-soft { @apply btn bg-green-soft text-green-deep px-4 py-2 hover:bg-green/15; }
+  .stat-num { @apply font-display text-[2rem] leading-none tabular-nums; }
+  .divider { @apply h-px bg-line; }
+  .link { @apply text-green-deep font-semibold underline-offset-2 hover:underline; }
+}
+
+@layer utilities {
+  .tnum { font-variant-numeric: tabular-nums; }
+  .grain::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .04; mix-blend-mode: multiply;
+    background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+    background-size: 4px 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
