@@ -1,21 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Page } from '../components/Layout.jsx';
-import { Spinner } from '../components/ui.jsx';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
-import { dateDE } from '../lib/format.js';
+import { PageHead, Spinner, StatusChip, EmptyState, LogoMark } from '../components/ui.jsx';
+import { relTime } from '../lib/format.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { Plus, MapPin, Users, ArrowRight, Sparkles } from 'lucide-react';
-
-const STATUS = {
-  sammeln: { label: 'Daten sammeln', cls: 'pill' },
-  verhandeln: { label: 'In Verhandlung', cls: 'pill pill-amber' },
-  vereinbart: { label: 'Vereinbart', cls: 'pill' },
-};
+import { Plus, ArrowRight, Users, Zap, FolderOpen, BookOpen } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const nav = useNavigate();
   const [projects, setProjects] = useState(null);
   const [err, setErr] = useState('');
 
@@ -24,65 +16,58 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <Page>
-      <div className="wrap py-10 sm:py-14">
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl sm:text-4xl">Hallo {user?.name?.split(' ')[0] || 'zusammen'} 👋</h1>
-            <p className="text-ink-soft mt-1">Deine Solarprojekte auf einen Blick.</p>
-          </div>
-          <Link to="/rechner" className="btn-primary"><Plus className="h-4 w-4" /> Neues Projekt</Link>
-        </div>
+    <div>
+      <PageHead
+        eyebrow={`Hallo, ${user?.name?.split(' ')[0] || ''}`}
+        title="Meine Projekte"
+        sub="Deine Solar-Initiativen im Überblick. Jedes Projekt ist ein eigener Arbeitsbereich für die Hausgemeinschaft."
+        actions={<Link to="/rechner" className="btn-primary btn-sm"><Plus className="h-4 w-4" /> Neues Projekt</Link>}
+      />
 
-        {projects === null && <div className="py-16"><Spinner label="Projekte werden geladen …" /></div>}
-        {err && <p className="text-amber-deep">{err}</p>}
-
-        {projects && projects.length === 0 && (
-          <div className="card p-10 text-center">
-            <div className="inline-grid place-items-center h-14 w-14 rounded-2xl bg-green-soft text-green-deep mb-4">
-              <Sparkles className="h-7 w-7" />
+      {err && <div className="chip-danger mb-4">{err}</div>}
+      {projects === null ? <Spinner label="Projekte werden geladen …" />
+        : projects.length === 0 ? (
+          <div className="card">
+            <EmptyState icon={<FolderOpen className="h-5 w-5" />} title="Noch kein Projekt">
+              Starte mit dem Schnellrechner: ein paar Eckdaten zum Haus genügen für die erste Schätzung.
+            </EmptyState>
+            <div className="px-5 pb-6 text-center">
+              <Link to="/rechner" className="btn-primary btn-sm mx-auto w-max"><Plus className="h-4 w-4" /> Projekt starten</Link>
             </div>
-            <h2 className="text-2xl mb-1">Noch kein Projekt</h2>
-            <p className="text-ink-soft mb-6 max-w-md mx-auto">
-              Starte mit dem Rechner: ein paar Angaben zu deinem Haus, und dein erstes Projekt steht.
-            </p>
-            <button onClick={() => nav('/rechner')} className="btn-primary mx-auto">
-              Projekt erstellen <ArrowRight className="h-4 w-4" />
-            </button>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projects.map((p) => (
+              <Link key={p.id} to={`/projekt/${p.id}`} className="card p-4 hover:shadow-raise hover:border-line-strong transition group">
+                <div className="flex items-start gap-3">
+                  <LogoMark className="h-9 w-9" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display font-bold text-[15px] leading-tight truncate">{p.name}</div>
+                    <div className="text-2xs text-ink-faint truncate mt-0.5">{[p.street, p.hausnr].filter(Boolean).join(' ') || p.ort || '—'}</div>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-ink-faint group-hover:text-grass-deep transition shrink-0" />
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <StatusChip status={p.status} />
+                  <div className="flex items-center gap-3 text-2xs text-ink-faint tnum">
+                    <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{p.members}</span>
+                    <span className="inline-flex items-center gap-1"><Zap className="h-3 w-3" />{p.kwp} kWp</span>
+                  </div>
+                </div>
+                <div className="text-2xs text-ink-faint mt-2">Zuletzt {relTime(p.updated_at)}</div>
+              </Link>
+            ))}
           </div>
         )}
 
-        {projects && projects.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p) => {
-              const st = STATUS[p.status] || STATUS.sammeln;
-              return (
-                <Link key={p.id} to={`/projekt/${p.id}`}
-                      className="card p-5 hover:shadow-lift transition group">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-lg leading-snug group-hover:text-green-deep transition">{p.name}</h3>
-                    <span className={st.cls}>{st.label}</span>
-                  </div>
-                  <div className="mt-3 space-y-1.5 text-[13.5px] text-ink-soft">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-ink-faint" />
-                      {[p.street, p.hausnr].filter(Boolean).join(' ') + (p.ort ? `, ${p.ort}` : '') || '—'}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-ink-faint" />
-                      {p.members} {p.members === 1 ? 'Teilnehmer:in' : 'Teilnehmer:innen'} · Preisanteil {Math.round(p.share_pct)} %
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-line flex items-center justify-between text-[12px] text-ink-faint">
-                    <span>Aktualisiert {dateDE(p.updated_at)}</span>
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+      <div className="mt-8 card p-4 flex items-center gap-3">
+        <span className="h-9 w-9 rounded-card bg-grass-soft grid place-items-center shrink-0"><BookOpen className="h-4 w-4 text-grass-deep" /></span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[14px] font-medium">Wie funktioniert das Modell?</div>
+          <div className="text-2xs text-ink-faint">Rechtsrahmen (§42b EnWG), Ablauf und ehrliche Wirtschaftlichkeit im Wissensbereich.</div>
+        </div>
+        <Link to="/modell" className="btn-ghost btn-sm shrink-0">Öffnen</Link>
       </div>
-    </Page>
+    </div>
   );
 }

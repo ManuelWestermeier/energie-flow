@@ -1,5 +1,49 @@
 # Changelog
 
+## 3.0.0 – Redesign & Ausbau zum Projekt-Hub
+
+Diese Version überarbeitet das gesamte Erscheinungsbild und baut den Projektbereich
+zu einem vollwertigen Arbeits-Workspace mit Seitenleiste und neun Unterseiten aus.
+
+### Design
+- **Weg vom „KI-Default-Look"**: warmes Creme + Serifenschrift (Fraunces) ersetzt durch
+  kühl-neutrale Flächen und ein sachlich-ziviles Schriftpaar **Archivo** (Display) +
+  **Public Sans** (Text/Daten, mit Tabellenziffern).
+- **Echte Logos statt Schrift-Logo**: `Langes_Logo` und `Kompaktes_Logo` automatisch vom
+  Weißraum befreit – `logo-wide.jpeg` (1012×294) als horizontales Lockup für Kopf/Fuß,
+  `logo-mark.jpeg` (660×660) als Emblem für Mobile/Favicon.
+- **Ein Signature-Element – die „Flussschiene"**: ein grün→orange Verlauf (direkt aus dem
+  Logo) als dünne Header-Linie, Sidebar-Aktivmarkierung, Fortschrittsbalken und – als
+  Höhepunkt – vertikale Phasen-Spine im Fahrplan. Sonst bewusst zurückhaltend.
+- Neues, konsistentes Token- und Komponentensystem (Buttons, Karten, Chips, Statusanzeigen,
+  Donut/ProgressBar in Markenfarbe).
+
+### Projekt-Hub (Workspace)
+- Neuer Seitenleisten-Workspace mit Live-Synchronisation (Socket.IO) und **neun Unterseiten**:
+  Übersicht, Fahrplan, Gebäude & Anlage, Hausgemeinschaft, Wirtschaftlichkeit, Verhandlung,
+  Dokumente, Aktivität, Einstellungen.
+- Projekt wird einmal geladen und über einen React-Context an alle Unterseiten verteilt.
+
+### Vier neue Funktionen
+- **Fahrplan mit Aufgaben-Checklisten** (6 Phasen). Automatisch erkannte Schritte (z. B.
+  „50 % zugesagt", „Eigentümer:in beigetreten", „Einigung erreicht") und manuell abhakbare
+  Aufgaben; Fortschritt fließt in Übersicht und Sidebar ein.
+- **Aktivitätsprotokoll** je Projekt: jedes wichtige Ereignis wird serverseitig protokolliert
+  und chronologisch angezeigt.
+- **Verlinkter Wissensbereich**: GGV-Modell (§42b, 90-%-Klarstellung, Vergleich zu Mieterstrom),
+  „So funktioniert's", Wirtschaftlichkeit und FAQ.
+- **Detail-Wirtschaftlichkeit** als eigene Seite: zwei Live-Regler (Beteiligung, Preis),
+  Hebel-Diagramm, Sensitivitätsmatrix und vollständige Aufschlüsselung – mit ehrlicher Einordnung.
+
+### Technisch
+- Backend erweitert: Aufgaben-Status je Projekt (`POST /api/projekt/:id/tasks/:taskId`),
+  Aktivitäts-Endpunkt (`GET /api/projects/:id/activity`) und automatisches Protokollieren in
+  den bestehenden Routen.
+- Routing auf verschachtelte Layout-Routen umgestellt (öffentliches Layout, App-Layout,
+  Projekt-Workspace). `framer-motion` entfernt; Übergänge laufen über CSS.
+- `/dashboard` → `/start` (Weiterleitung erhalten).
+
+
 ## 2.0.0 – Umstellung auf Username/Password, Single-Port & Node 16
 
 Diese Version baut Authentifizierung, Auslieferung und den Abhängigkeits-Stack

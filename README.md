@@ -72,14 +72,35 @@ dank WebSocket sofort bei allen.
 
 ---
 
+## Der Projektbereich (Workspace)
+
+Jedes Projekt öffnet sich als Arbeitsbereich mit fester Seitenleiste (live-synchronisiert)
+und neun Unterseiten:
+
+- **Übersicht** – aktuelle Phase, Kennzahlen, nächste Schritte, letzte Aktivität.
+- **Fahrplan** – sechs Phasen mit Aufgaben-Checklisten (automatisch erkannt + manuell);
+  das Signature-Element „Flussschiene" verbindet die Phasen.
+- **Gebäude & Anlage** – technische/wirtschaftliche Eckdaten, Umschalten Schätzung ↔ Feindaten.
+- **Hausgemeinschaft** – Mitglieder, eigene Daten bestätigen, Einladungslinks.
+- **Wirtschaftlichkeit** – Live-Szenarien (zwei Regler), Hebel-Diagramm, Sensitivitätsmatrix.
+- **Verhandlung** – Preis-Regler mit Trade-off, Vorschläge, Zustimmung/Einigung.
+- **Dokumente** – Anschreiben, Analyse und GGV-Verträge als `.docx` (Verträge nach Einigung).
+- **Aktivität** – vollständiges, chronologisches Protokoll.
+- **Einstellungen** – Projekt umbenennen, Übersicht.
+
+Begleitet wird das durch einen verlinkten **Wissensbereich** (GGV-Modell/§42b,
+„So funktioniert's", Wirtschaftlichkeit, FAQ).
+
+---
+
 ## Architektur / Technik
 
 | Bereich    | Eingesetzt                                                                 |
 |------------|----------------------------------------------------------------------------|
-| Frontend   | React 18, **Vite 4**, React Router, Tailwind CSS, framer-motion, lucide-react |
+| Frontend   | React 18, **Vite 4**, React Router, Tailwind CSS, lucide-react             |
 | Diagramme  | Chart.js / react-chartjs-2                                                  |
 | Dokumente  | `docx` + `file-saver` (im Browser, dynamisch nachgeladen)                  |
-| Schriften  | Fraunces & Hanken Grotesk (lokal via `@fontsource`, kein CDN)             |
+| Schriften  | **Archivo** (Display) & **Public Sans** (Text), lokal via `@fontsource`   |
 | PWA        | statische `manifest.webmanifest` + schlanker eigener Service Worker        |
 | Backend    | Express, Socket.IO, **bcryptjs** (Auth)                                    |
 | Datenbank  | abhängigkeitsfreier **JSON-Store** (`server/data/db.json`)                |
@@ -96,7 +117,7 @@ energieflow/
 │  └─ routes/ (auth.js, api.js)
 └─ client/               # Frontend-Quellcode (wird nach /dist gebaut)
    ├─ index.html · public/ (manifest, sw.js, Logos)
-   └─ src/ (lib, context, components, pages)
+   └─ src/ (lib, context, components, pages; pages/project/ = 9 Workspace-Seiten)
 ```
 
 `npm run build` erzeugt `/dist`; der Server liefert diesen Ordner aus (mit

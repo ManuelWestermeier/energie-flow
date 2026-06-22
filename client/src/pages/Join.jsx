@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { Page } from '../components/Layout.jsx';
-import { Logo, Spinner } from '../components/ui.jsx';
+import { LogoWide, Spinner } from '../components/ui.jsx';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { MapPin, Home, KeyRound, ArrowRight, AlertCircle } from 'lucide-react';
@@ -15,31 +14,27 @@ export default function Join() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    api.inviteInfo(token).then(setInfo).catch((e) => setErr(e.message));
-  }, [token]);
+  useEffect(() => { api.inviteInfo(token).then(setInfo).catch((e) => setErr(e.message)); }, [token]);
 
   const join = async () => {
     setBusy(true); setErr('');
-    try {
-      const full = await api.acceptInvite(token, {});
-      nav(`/projekt/${full.id}`, { replace: true });
-    } catch (e) { setErr(e.message); setBusy(false); }
+    try { const full = await api.acceptInvite(token, {}); nav(`/projekt/${full.id}`, { replace: true }); }
+    catch (e) { setErr(e.message); setBusy(false); }
   };
 
   const isVermieter = info?.role === 'vermieter';
 
   return (
-    <Page>
-      <div className="wrap py-14 sm:py-20 max-w-lg">
-        <div className="text-center mb-6"><Logo /></div>
+    <div className="min-h-screen bg-canvas">
+      <div className="wrap py-12 sm:py-20 max-w-lg">
+        <div className="text-center mb-6"><Link to="/" className="inline-block"><LogoWide className="h-9 mx-auto" /></Link></div>
 
         {err && !info && (
           <div className="card p-7 text-center">
-            <AlertCircle className="h-9 w-9 text-amber-deep mx-auto mb-3" />
+            <AlertCircle className="h-9 w-9 text-sun-deep mx-auto mb-3" />
             <h1 className="text-2xl mb-1">Einladung ungültig</h1>
             <p className="text-ink-soft mb-6">{err}</p>
-            <Link to="/" className="btn-ghost mx-auto">Zur Startseite</Link>
+            <Link to="/" className="btn-ghost mx-auto w-max">Zur Startseite</Link>
           </div>
         )}
 
@@ -47,7 +42,7 @@ export default function Join() {
 
         {info && (
           <div className="card p-7">
-            <span className={isVermieter ? 'pill pill-amber' : 'pill'}>
+            <span className={isVermieter ? 'chip-sun' : 'chip-grass'}>
               {isVermieter ? 'Einladung für die Eigentümerseite' : 'Einladung in die Hausgemeinschaft'}
             </span>
             <h1 className="text-2xl sm:text-3xl mt-4 mb-1">{info.project.name}</h1>
@@ -66,31 +61,22 @@ export default function Join() {
               </div>
             </div>
 
-            {loading ? (
-              <Spinner />
-            ) : user ? (
-              <>
-                <button onClick={join} disabled={busy} className="btn-primary w-full !py-3">
-                  {busy ? 'Trete bei …' : 'Projekt beitreten'} <ArrowRight className="h-4 w-4" />
-                </button>
-                <p className="text-[12px] text-ink-faint mt-3">Angemeldet als {user.email}.</p>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => nav('/login', { state: { from: loc.pathname } })}
-                  className="btn-primary w-full !py-3">
-                  Anmelden & beitreten <ArrowRight className="h-4 w-4" />
-                </button>
-                <p className="text-[12px] text-ink-faint mt-3">
-                  Nach der Anmeldung kommst du automatisch hierher zurück.
-                </p>
-              </>
-            )}
-            {err && info && <p className="text-amber-deep text-sm mt-4">{err}</p>}
+            {loading ? <Spinner />
+              : user ? (
+                <>
+                  <button onClick={join} disabled={busy} className="btn-primary w-full !py-3">{busy ? 'Trete bei …' : 'Projekt beitreten'} <ArrowRight className="h-4 w-4" /></button>
+                  <p className="text-[12px] text-ink-faint mt-3">Angemeldet als {user.name}.</p>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => nav('/login', { state: { from: loc.pathname } })} className="btn-primary w-full !py-3">Anmelden & beitreten <ArrowRight className="h-4 w-4" /></button>
+                  <p className="text-[12px] text-ink-faint mt-3">Nach der Anmeldung kommst du automatisch hierher zurück.</p>
+                </>
+              )}
+            {err && info && <p className="text-danger text-sm mt-4">{err}</p>}
           </div>
         )}
       </div>
-    </Page>
+    </div>
   );
 }

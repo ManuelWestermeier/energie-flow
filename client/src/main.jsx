@@ -2,15 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
-// Lokale Schriften (per npm installiert – kein externer Font-CDN)
-import '@fontsource/fraunces/400.css';
-import '@fontsource/fraunces/500.css';
-import '@fontsource/fraunces/600.css';
-import '@fontsource/fraunces/700.css';
-import '@fontsource/hanken-grotesk/400.css';
-import '@fontsource/hanken-grotesk/500.css';
-import '@fontsource/hanken-grotesk/600.css';
-import '@fontsource/hanken-grotesk/700.css';
+// Lokale Schriften (per npm, kein CDN). Archivo = Display, Public Sans = Text.
+import '@fontsource/archivo/600.css';
+import '@fontsource/archivo/700.css';
+import '@fontsource/public-sans/400.css';
+import '@fontsource/public-sans/500.css';
+import '@fontsource/public-sans/600.css';
+import '@fontsource/public-sans/700.css';
 
 import './index.css';
 import App from './App.jsx';
@@ -26,12 +24,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
-// Leichter Service Worker (PWA) – nur außerhalb von localhost registrieren,
-// damit der Entwicklungsmodus nie veraltete Inhalte ausliefert.
+// Leichter Service Worker (PWA) – nur außerhalb von localhost.
 if ('serviceWorker' in navigator) {
   const host = location.hostname;
   const local = host === 'localhost' || host === '127.0.0.1' || host === '';
-  if (!local) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
-  }
+  if (!local) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }

@@ -49,4 +49,6 @@ export const api = {
   acceptInvite: (token, d) => req('POST', `/api/invites/${token}/accept`, d),
   propose: (id, d) => req('POST', `/api/projects/${id}/proposals`, d),
   consent: (id, agreed) => req('POST', `/api/projects/${id}/consent`, { agreed }),
+  toggleTask: (id, taskId, done, label) => req('POST', `/api/projects/${id}/tasks/${taskId}`, { done, label }),
+  activity: (id) => req('GET', `/api/projects/${id}/activity`),
 };

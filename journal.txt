@@ -1,0 +1,21 @@
+EnergieFlow – Journal (Sitzungsübersicht)
+=========================================
+
+Hinweis: Frühere Transkripte sind im System unter /mnt/transcripts/ abgelegt.
+
+— 2026-06-20 · Redesign + Hub-Ausbau (Version 3.0.0)
+  • Designwechsel weg vom Creme-/Serif-Look: Archivo + Public Sans, kühle Flächen,
+    echte Logos (autogecroppt), Signature-Element „Flussschiene" (grün→orange).
+  • Projektbereich zu Seitenleisten-Workspace mit 9 Unterseiten ausgebaut.
+  • Vier neue Funktionen: Fahrplan mit Aufgaben-Checklisten, Aktivitätsprotokoll,
+    verlinkter Wissensbereich (GGV/§42b/FAQ), Detail-Wirtschaftlichkeit (Szenarien).
+  • Backend: Aufgaben-Status + Aktivitäts-Endpunkt + automatisches Protokollieren.
+  • Routing auf verschachtelte Layout-Routen umgestellt; framer-motion entfernt.
+  • Verifiziert: vite build (ok), Server-Flows per curl (Registrierung, Projekt,
+    Aufgaben, Aktivität, Verhandlung→Einigung, SPA-Fallback).
+
+— Frühere Sitzungen (Kurz)
+  • Umbau auf Single-Package-Monorepo, Node-16-kompatibel.
+  • Auth auf Benutzername/Passwort (bcryptjs, HTTP Basic) statt OAuth/JWT.
+  • Abhängigkeitsfreier JSON-Store statt better-sqlite3.
+  • Engine Ariadne-kalibriert (30 kWp / 8 WE; qmax 40,7 %; Versicherung enthalten).
