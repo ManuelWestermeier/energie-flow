@@ -10,9 +10,9 @@ Chart.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, L
 
 // Zeigt: Rendite (IRR) der Eigentümerseite über dem Solarstrompreis,
 // einmal bei aktueller Beteiligung, einmal bei voller Beteiligung (100 %).
-export default function LeverChart({ E, quote, height = 220 }) {
-  const atQuote = useMemo(() => irrCurve(E, quote, 55, 105, 2.5), [E, quote]);
-  const atFull = useMemo(() => irrCurve(E, 100, 55, 105, 2.5), [E]);
+export default function LeverChart({ E, quote, consumptionFactor = 1, height = 220 }) {
+  const atQuote = useMemo(() => irrCurve(E, quote, 55, 105, 2.5, consumptionFactor), [E, quote, consumptionFactor]);
+  const atFull = useMemo(() => irrCurve(E, 100, 55, 105, 2.5, consumptionFactor), [E, consumptionFactor]);
 
   const data = {
     labels: atFull.map((p) => p.share),

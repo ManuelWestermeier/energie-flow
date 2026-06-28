@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { Spinner } from './components/ui.jsx';
@@ -10,7 +11,7 @@ import HowItWorks from './pages/HowItWorks.jsx';
 import Model from './pages/Model.jsx';
 import EconomicsExplainer from './pages/EconomicsExplainer.jsx';
 import FAQ from './pages/FAQ.jsx';
-import Rechner from './pages/Rechner.jsx';
+const Rechner = lazy(() => import('./pages/Rechner.jsx'));
 import Login from './pages/Login.jsx';
 import Join from './pages/Join.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -37,6 +38,7 @@ function RequireAuth() {
 
 export default function App() {
   return (
+    <Suspense fallback={<div className="min-h-screen grid place-items-center"><Spinner label="Lädt …" /></div>}>
     <Routes>
       {/* Öffentliche Seiten mit gemeinsamem Layout */}
       <Route element={<PublicLayout />}>
@@ -75,5 +77,6 @@ export default function App() {
 
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }

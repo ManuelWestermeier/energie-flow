@@ -4,7 +4,7 @@
 //  „auto" (werden aus dem Projektzustand erkannt) oder manuell (Häkchen, das
 //  serverseitig gespeichert wird).
 // ===========================================================================
-import { committedQuote } from './economics.js';
+import { committedQuote, consumptionStats } from './economics.js';
 
 const hasInvite = (p, role) => (p.invites || []).some((i) => i.role === role);
 const hasMember = (p, role) => (p.members || []).some((m) => m.role === role);
@@ -25,7 +25,7 @@ export const PHASES = [
     tasks: [
       { id: 'invited', label: 'Nachbar:innen eingeladen', auto: (p) => hasInvite(p, 'mieter'), to: 'gemeinschaft' },
       { id: 'quote50', label: 'Mindestens 50 % der Wohnungen sagen zu', auto: (p) => committedQuote(p) >= 50, to: 'gemeinschaft' },
-      { id: 'confirmed', label: 'Haushaltsdaten gesammelt', to: 'gemeinschaft', hint: 'Verbrauchswerte machen die Analyse gebäudegenau.' },
+      { id: 'confirmed', label: 'Haushaltsdaten gesammelt', auto: (p) => { const c = consumptionStats(p); return c.tenants > 0 && c.reported >= Math.ceil(c.tenants * 0.5); }, to: 'gemeinschaft', hint: 'Verbrauchswerte machen die Analyse gebäudegenau.' },
     ],
   },
   {

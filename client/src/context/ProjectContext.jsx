@@ -1,11 +1,16 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
-import { getSocket } from '../lib/socket.js';
 import { useAuth } from './AuthContext.jsx';
 
 const Ctx = createContext(null);
 export const useProject = () => useContext(Ctx);
+
+// Live-Aktualisierung ohne WebSocket: Die handelnde Person sieht ihre eigenen
+// Änderungen sofort (jede Mutation liefert den vollständigen Projektzustand
+// zurück). Änderungen anderer werden per kurzem Polling übernommen – und
+// zusätzlich immer dann, wenn der Tab wieder in den Vordergrund kommt.
+const POLL_MS = 7000;
 
 export function ProjectProvider({ children }) {
   const { id } = useParams();
@@ -22,14 +27,28 @@ export function ProjectProvider({ children }) {
   useEffect(() => {
     let alive = true;
     setLoading(true); setError(''); setProject(null);
+
     api.getProject(id)
       .then((p) => { if (alive) setProject(p); })
       .catch((e) => { if (alive) setError(e.message); })
       .finally(() => { if (alive) setLoading(false); });
-    const s = getSocket();
-    const onUpdate = (p) => { if (p && p.id === id) setProject(p); };
-    if (s) { s.emit('project:join', id); s.on('project:update', onUpdate); }
-    return () => { alive = false; if (s) { s.emit('project:leave', id); s.off('project:update', onUpdate); } };
+
+    const sync = () => {
+      if (document.visibilityState !== 'visible') return;
+      api.getProject(id)
+        .then((p) => { if (alive && p && p.id === id) setProject(p); })
+        .catch(() => { /* stilles Polling */ });
+    };
+    const iv = setInterval(sync, POLL_MS);
+    document.addEventListener('visibilitychange', sync);
+    window.addEventListener('focus', sync);
+
+    return () => {
+      alive = false;
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', sync);
+      window.removeEventListener('focus', sync);
+    };
   }, [id]);
 
   const me = project ? (project.members || []).find((m) => m.userId === user?.id) : null;

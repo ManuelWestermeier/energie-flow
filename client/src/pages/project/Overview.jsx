@@ -1,20 +1,21 @@
 import { Link } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext.jsx';
 import { Stat, ProgressBar, InfoNote, EmptyState } from '../../components/ui.jsx';
-import { paramsFromProject, committedQuote, scenario } from '../../lib/economics.js';
+import { paramsFromProject, committedQuote, scenario, consumptionStats, CONS_REF } from '../../lib/economics.js';
 import { overall, currentPhase, nextActions, PHASES, phaseComplete } from '../../lib/phases.js';
-import { eur, ct, pct, irrText, relTime } from '../../lib/format.js';
+import { eur, ct, kwh, pct, irrText, relTime } from '../../lib/format.js';
 import {
   ArrowRight, CircleDot, Activity as ActIcon, Building2, Users, BarChart3,
-  Handshake, FileText, ListChecks, Sun,
+  Handshake, FileText, ListChecks, Sun, Database,
 } from 'lucide-react';
 
 export default function Overview() {
   const { project } = useProject();
   const E = paramsFromProject(project);
   const committed = committedQuote(project);
+  const cs = consumptionStats(project);
   const quote = committed > 0 ? committed : 100;
-  const r = scenario(E, { quotePct: quote, sharePct: project.share_pct });
+  const r = scenario(E, { quotePct: quote, sharePct: project.share_pct, consumptionFactor: cs.factor });
   const ov = overall(project);
   const cp = currentPhase(project);
   const todo = nextActions(project, 4);
@@ -54,6 +55,18 @@ export default function Overview() {
         <Stat label="Beteiligung" value={pct(quote, 0)} sub={`${Math.round(quote / 100 * project.we)} von ${project.we} WE`} />
         <Stat label="Rendite Eigentümer" tone="sun" value={r.irr == null ? '—' : pct(r.irr * 100, 1)} sub={r.irr == null ? 'trägt sich (noch) nicht' : 'p.a. über ' + E.zeitraum + ' J.'} />
       </div>
+
+      {/* Datengrundlage – die Kennzahlen folgen den echten Angaben der Mieter */}
+      <Link to="../gemeinschaft" className="card px-4 py-3 flex items-center gap-3 hover:border-line-strong hover:bg-paper-2 transition">
+        <Database className="h-4 w-4 text-grass-deep shrink-0" />
+        <span className="text-[13px] text-ink-soft">
+          Rechengrundlage: <strong className="text-ink tnum">{cs.committed}</strong>/{project.we} WE zugesagt
+          {cs.reported > 0
+            ? <> · <strong className="text-ink tnum">{cs.reported}</strong> Verbrauchswert{cs.reported === 1 ? '' : 'e'} (Ø <span className="tnum">{kwh(cs.avg)}</span>)</>
+            : <> · noch keine Verbrauchswerte (Annahme <span className="tnum">{kwh(CONS_REF)}</span>/WE)</>}
+        </span>
+        <ArrowRight className="h-4 w-4 text-ink-faint ml-auto shrink-0" />
+      </Link>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Nächste Schritte */}

@@ -64,10 +64,11 @@ export function paramsFromProject(p = {}) {
 }
 
 // Kernberechnung
-export function scenario(E, { quotePct, sharePct }) {
+export function scenario(E, { quotePct, sharePct, consumptionFactor = 1 }) {
   const teil = E.we * quotePct / 100;               // teilnehmende Wohneinheiten
   const erz = E.kwp * E.ertrag;                      // Jahreserzeugung kWh
-  const evje = 1582.5 * (E.kwp / E.we) / (30 / 8);   // Direktverbrauch je teilnehmender WE
+  const evjeBase = 1582.5 * (E.kwp / E.we) / (30 / 8); // Direktverbrauch je WE bei Referenzverbrauch (2500 kWh)
+  const evje = evjeBase * (consumptionFactor || 1);  // skaliert mit dem real gemeldeten Mieterverbrauch
   const raw = teil * evje;
   const cap = erz * E.qmax / 100;                    // Obergrenze Direktverbrauch
   const solar = Math.min(raw, cap);                  // tatsächlich direkt genutzter Solarstrom kWh
@@ -94,10 +95,10 @@ export function scenario(E, { quotePct, sharePct }) {
 }
 
 // IRR-Kurve über den Preisanteil – für die Hebel-Visualisierung
-export function irrCurve(E, quotePct, from = 60, to = 100, step = 2) {
+export function irrCurve(E, quotePct, from = 60, to = 100, step = 2, consumptionFactor = 1) {
   const pts = [];
   for (let s = from; s <= to + 1e-6; s += step) {
-    const r = scenario(E, { quotePct, sharePct: +s.toFixed(1) }).irr;
+    const r = scenario(E, { quotePct, sharePct: +s.toFixed(1), consumptionFactor }).irr;
     pts.push({ share: +s.toFixed(1), irr: r == null ? null : +(r * 100).toFixed(2) });
   }
   return pts;
@@ -109,4 +110,34 @@ export function committedQuote(project) {
   const we = +project.we || m.length || 8;
   const ja = m.filter((x) => x.role !== 'vermieter' && x.status === 'zugesagt').length;
   return Math.min(100, Math.round((ja / we) * 100));
+}
+
+// Referenzverbrauch je Wohneinheit (Ariadne/Stromspiegel-Basis) – Kalibrierpunkt der Engine
+export const CONS_REF = 2500;
+
+// Verbrauchslage aus den Mitgliedern ableiten (für die verbrauchsabhängige Rechnung)
+export function consumptionStats(project) {
+  const m = (project.members || []).filter((x) => x.role !== 'vermieter');
+  const committed = m.filter((x) => x.status === 'zugesagt');
+  const reported = m.filter((x) => Number(x.verbrauch) > 0);
+  const basis = committed.length ? committed : m;          // Schnitt über Zusagen, sonst alle Mietparteien
+  const vals = basis.map((x) => (Number(x.verbrauch) > 0 ? Number(x.verbrauch) : CONS_REF));
+  const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : CONS_REF;
+  return {
+    tenants: m.length,
+    committed: committed.length,
+    reported: reported.length,
+    totalReported: reported.reduce((a, b) => a + Number(b.verbrauch), 0),
+    avg,
+    factor: avg / CONS_REF,                                 // 1,0 = Referenz; >1 = mehr Verbrauch → mehr Direktnutzung
+    anyReported: reported.length > 0,
+  };
+}
+
+// Geschätzter Eigenverbrauch eines einzelnen Haushalts (kWh/a) – für die Live-Vorschau.
+// Anker: bei CONS_REF entspricht es dem Ariadne-Wert je WE; nie mehr als der eigene Verbrauch.
+export function selfPerHousehold(E, consumptionKwh) {
+  const c = consumptionKwh || CONS_REF;
+  const evjeBase = 1582.5 * ((+E.kwp || 30) / (+E.we || 8)) / (30 / 8);
+  return Math.min(evjeBase * (c / CONS_REF), c);
 }

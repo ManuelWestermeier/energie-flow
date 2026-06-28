@@ -4,7 +4,7 @@ import { useProject } from '../../context/ProjectContext.jsx';
 import { PageHead, Stat, InfoNote, Avatar, ProgressBar } from '../../components/ui.jsx';
 import LeverChart from '../../components/LeverChart.jsx';
 import { api } from '../../lib/api.js';
-import { paramsFromProject, committedQuote, scenario } from '../../lib/economics.js';
+import { paramsFromProject, committedQuote, scenario, consumptionStats } from '../../lib/economics.js';
 import { eur, ct, pct, relTime } from '../../lib/format.js';
 import { Handshake, Send, Check, RotateCcw, Scale, CheckCircle2 } from 'lucide-react';
 
@@ -12,12 +12,14 @@ export default function Negotiation() {
   const { project, setProject, me } = useProject();
   const E = useMemo(() => paramsFromProject(project), [project]);
   const quote = committedQuote(project) || 100;
+  const cs = useMemo(() => consumptionStats(project), [project]);
+  const cf = cs.factor;
   const [share, setShare] = useState(project.share_pct || 90);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
 
-  const current = scenario(E, { quotePct: quote, sharePct: project.share_pct });
-  const draft = scenario(E, { quotePct: quote, sharePct: share });
+  const current = scenario(E, { quotePct: quote, sharePct: project.share_pct, consumptionFactor: cf });
+  const draft = scenario(E, { quotePct: quote, sharePct: share, consumptionFactor: cf });
   const proposals = project.proposals || [];
   const consent = project.consent || { agreedCount: 0, activeCount: 0, consensus: false };
 
@@ -25,7 +27,7 @@ export default function Negotiation() {
     setSending(true);
     try {
       setProject(await api.propose(project.id, {
-        share_pct: Number(share), quote_pct: quote, params: E, result: draft, note: note || null,
+        share_pct: Number(share), quote_pct: quote, params: { ...E, consumptionFactor: cf }, result: draft, note: note || null,
       }));
       setNote('');
     } catch (e) { alert(e.message); } finally { setSending(false); }
@@ -89,7 +91,7 @@ export default function Negotiation() {
         <div className="space-y-6">
           <section className="card p-5">
             <h3 className="mb-2">Preis-Hebel</h3>
-            <LeverChart E={E} quote={quote} height={200} />
+            <LeverChart E={E} quote={quote} consumptionFactor={cf} height={200} />
           </section>
 
           <section className="card p-5">

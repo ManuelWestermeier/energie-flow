@@ -1,43 +1,41 @@
 {
   "name": "energieflow",
-  "version": "2.0.0",
+  "version": "4.1.0",
   "private": true,
   "type": "module",
-  "description": "EnergieFlow / SolarGemeinschaft – Plattform für gemeinschaftliche Gebäudeversorgung (GGV). Ein Server, ein Port: Backend-API + ausgeliefertes Frontend.",
+  "description": "EnergieFlow / SolarGemeinschaft – Plattform für gemeinschaftliche Gebäudeversorgung (GGV). Cloudflare Pages: statisches React-Frontend + API als Pages Functions (onRequest), Persistenz auf KV.",
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "scripts": {
-    "dev": "node scripts/dev.mjs",
+    "dev:client": "vite --port 5173 --strictPort",
+    "dev": "wrangler pages dev --proxy 5173 -- npm run dev:client",
     "build": "vite build",
-    "start": "node server/src/index.js --prod",
-    "serve": "node server/src/index.js --prod",
-    "install:all": "npm install"
+    "preview": "npm run build && wrangler pages dev dist",
+    "start": "wrangler pages dev dist",
+    "deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {
     "@fontsource/archivo": "^5.0.0",
     "@fontsource/public-sans": "^5.0.0",
-    "bcryptjs": "2.4.3",
     "chart.js": "4.4.1",
     "docx": "8.5.0",
-    "dotenv": "16.4.7",
-    "express": "4.22.2",
     "file-saver": "2.0.5",
     "lucide-react": "0.451.0",
-    "nanoid": "3.3.12",
+    "maplibre-gl": "^4.7.1",
     "react": "18.3.1",
     "react-chartjs-2": "5.2.0",
     "react-dom": "18.3.1",
     "react-router-dom": "6.30.4",
-    "socket.io": "4.8.3",
-    "socket.io-client": "4.8.3"
+    "recharts": "^2.15.4",
+    "three": "^0.160.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "4.2.1",
     "autoprefixer": "10.4.20",
-    "nodemon": "3.1.7",
     "postcss": "8.5.15",
     "tailwindcss": "3.4.14",
-    "vite": "4.5.14"
+    "vite": "4.5.14",
+    "wrangler": "^3.95.0"
   }
 }

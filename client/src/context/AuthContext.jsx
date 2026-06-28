@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api, setCredentials, clearCredentials, hasCredentials } from '../lib/api.js';
-import { disconnectSocket } from '../lib/socket.js';
 
 const AuthCtx = createContext(null);
 export const useAuth = () => useContext(AuthCtx);
@@ -37,7 +36,7 @@ export function AuthProvider({ children }) {
     return login(username, password);
   };
 
-  const logout = () => { clearCredentials(); setUser(null); disconnectSocket(); };
+  const logout = () => { clearCredentials(); setUser(null); };
 
   return (
     <AuthCtx.Provider value={{ user, loading, login, register, logout, refresh }}>

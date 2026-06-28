@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext.jsx';
 import { PageHead, Stat, InfoNote } from '../../components/ui.jsx';
 import LeverChart from '../../components/LeverChart.jsx';
-import { paramsFromProject, committedQuote, scenario } from '../../lib/economics.js';
+import ModelRecommendation from '../../components/ModelRecommendation.jsx';
+import { paramsFromProject, committedQuote, scenario, consumptionStats, CONS_REF } from '../../lib/economics.js';
 import { de, eur, ct, kwh, pct } from '../../lib/format.js';
-import { BarChart3, Info } from 'lucide-react';
+import { BarChart3, Info, Database, RotateCcw } from 'lucide-react';
 
 const QUOTES = [50, 75, 100];
 const SHARES = [70, 80, 90, 100];
@@ -14,25 +15,48 @@ export default function Economics() {
   const { project } = useProject();
   const E = useMemo(() => paramsFromProject(project), [project]);
   const committed = committedQuote(project);
-  const [quote, setQuote] = useState(committed > 0 ? committed : 100);
+  const cs = useMemo(() => consumptionStats(project), [project]);
+  const baseQuote = committed > 0 ? committed : 100;
+  const [quote, setQuote] = useState(baseQuote);
   const [share, setShare] = useState(project.share_pct || 90);
+  const [cons, setCons] = useState(cs.avg);
   const [metric, setMetric] = useState('irr'); // 'irr' | 'save'
 
-  const r = useMemo(() => scenario(E, { quotePct: quote, sharePct: share }), [E, quote, share]);
+  const cf = (cons || CONS_REF) / CONS_REF;
+  const r = useMemo(() => scenario(E, { quotePct: quote, sharePct: share, consumptionFactor: cf }), [E, quote, share, cf]);
+  const live = quote === baseQuote && cons === cs.avg && share === (project.share_pct || 90);
+  const resetLive = () => { setQuote(baseQuote); setShare(project.share_pct || 90); setCons(cs.avg); };
 
   return (
     <div className="space-y-6">
       <PageHead eyebrow="Wirtschaftlichkeit" title="Szenarien durchrechnen"
-        sub="Zwei Stellschrauben bestimmen das Ergebnis: wie viele Wohnungen mitmachen und zu welchem Preis der Solarstrom geliefert wird. Alle Zahlen folgen dem Ariadne-Referenzmodell." />
+        sub="Drei Stellschrauben bestimmen das Ergebnis: wie viele Wohnungen mitmachen, wie viel Strom sie verbrauchen und zu welchem Preis der Solarstrom geliefert wird. Mehr Beteiligung und mehr Verbrauch heißt: mehr Solarstrom wird direkt im Haus genutzt statt eingespeist." />
 
       {!project.feindaten && <InfoNote>Basis ist eine <strong>Schätzung</strong>. Mit Feindaten unter <Link to="../gebaeude" className="link">Gebäude & Anlage</Link> werden die Werte gebäudegenau.</InfoNote>}
 
-      {/* Regler */}
+      {/* Modellempfehlung (beratend) – GGV bleibt operativ das Rückgrat */}
+      <ModelRecommendation we={project.we} />
+
+      {/* Stellschrauben */}
       <div className="card p-5">
-        <div className="grid sm:grid-cols-2 gap-6">
-          <Slider label="Beteiligung" value={quote} setValue={setQuote} min={10} max={100} step={5} suffix="% der Wohnungen"
-            note={`${Math.round(quote / 100 * project.we)} von ${project.we} WE`} />
-          <Slider label="Solarstrompreis" value={share} setValue={setShare} min={55} max={110} step={1} suffix="% des Grundpreises"
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <div className="flex items-start gap-2 text-[13px] text-ink-soft">
+            <Database className="h-4 w-4 text-grass-deep mt-0.5 shrink-0" />
+            <div>
+              Basis: <strong className="text-ink tnum">{cs.committed}</strong> von {project.we} WE zugesagt
+              {cs.reported > 0
+                ? <> · <strong className="text-ink tnum">{cs.reported}</strong> Verbrauchswert{cs.reported === 1 ? '' : 'e'} hinterlegt (Ø <span className="tnum">{kwh(cs.avg)}</span>)</>
+                : <> · noch keine Verbrauchswerte – gerechnet mit <span className="tnum">{kwh(CONS_REF)}</span>/WE</>}
+            </div>
+          </div>
+          {!live && <button onClick={resetLive} className="btn-quiet btn-sm shrink-0"><RotateCcw className="h-4 w-4" /> Auf Echtdaten</button>}
+        </div>
+        <div className="grid sm:grid-cols-3 gap-6">
+          <Slider label="Beteiligung" value={quote} setValue={setQuote} min={10} max={100} step={5} suffix="% der WE"
+            note={`${Math.round(quote / 100 * project.we)} von ${project.we} WE${quote === baseQuote && committed > 0 ? ' · echt' : ''}`} />
+          <Slider label="Ø Verbrauch / Haushalt" value={cons} setValue={setCons} min={1000} max={6000} step={100} suffix="kWh/a"
+            note={cons === cs.avg && cs.reported > 0 ? 'aus den Mieter-Angaben' : (cons === CONS_REF ? 'Referenzwert' : 'angenommen')} />
+          <Slider label="Solarstrompreis" value={share} setValue={setShare} min={55} max={110} step={1} suffix="% Grundpreis"
             note={`${ct(E.gvpreis * share / 100)} pro kWh`} sun />
         </div>
       </div>
@@ -49,7 +73,7 @@ export default function Economics() {
       <section className="card p-5">
         <div className="flex items-center gap-2 mb-1"><BarChart3 className="h-4 w-4 text-grass-deep" /><h3>Der Preis-Hebel</h3></div>
         <p className="text-[13px] text-ink-soft mb-3">Wie sich die Rendite der Eigentümerseite mit dem Preis verändert – bei eurer Beteiligung und bei voller Beteiligung.</p>
-        <LeverChart E={E} quote={quote} height={240} />
+        <LeverChart E={E} quote={quote} consumptionFactor={cf} height={240} />
       </section>
 
       {/* Sensitivitätsmatrix */}
@@ -72,7 +96,7 @@ export default function Economics() {
                 <tr key={q}>
                   <td className="font-semibold tnum">{q}%</td>
                   {SHARES.map((s) => {
-                    const sc = scenario(E, { quotePct: q, sharePct: s });
+                    const sc = scenario(E, { quotePct: q, sharePct: s, consumptionFactor: cf });
                     const sel = q === quote && s === share;
                     const val = metric === 'irr'
                       ? (sc.irr == null ? '–' : pct(sc.irr * 100, 1))
@@ -94,6 +118,7 @@ export default function Economics() {
       <div className="grid md:grid-cols-2 gap-4">
         <Breakdown title="Energiefluss (pro Jahr)" rows={[
           ['Jahreserzeugung', kwh(r.erz)],
+          ['Ø Verbrauch je Haushalt', kwh(cons)],
           ['davon direkt im Haus genutzt', kwh(r.solar)],
           ['Überschuss-Einspeisung', kwh(r.feed)],
           ['Direktverbrauchsquote', pct(r.direktquote, 1)],
