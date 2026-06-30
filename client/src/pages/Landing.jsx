@@ -57,9 +57,12 @@ export default function Landing() {
             [Scale, 'Fair einordnen', 'Preis und Beteiligung, die für beide Seiten tragen.'],
             [FileText, 'Anschreiben erzeugen', 'Einladungen an Mieter und Eigentümer auf Knopfdruck.'],
             [Sun, 'Informiert entscheiden', 'Klare Empfehlung, welches Modell zum Haus passt.'],
-          ].map(([Icon, t, d]) => (
-            <div key={t} className="panel p-5">
-              <Icon className="h-5 w-5 text-grass-deep" />
+          ].map(([Icon, t, d], i) => (
+            <div key={t} className="panel p-5 transition-colors duration-200 hover:border-grass-deep/40">
+              <div className="flex items-center justify-between">
+                <Icon className="h-5 w-5 text-grass-deep" />
+                <span className="text-2xs font-display font-semibold text-ink-faint tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+              </div>
               <h3 className="mt-3">{t}</h3>
               <p className="text-[13.5px] text-ink-soft mt-1">{d}</p>
             </div>
@@ -110,27 +113,45 @@ export default function Landing() {
   );
 }
 
+/**
+ * Hero visual — a quiet, schematic-style process card. Reads like a
+ * technical one-line diagram (sun → building → tenants) rather than a
+ * marketing graphic: hairline rule, flat numbered nodes, no glow or motion.
+ */
 function FlowVisual() {
-  const Node = ({ icon, title, sub, ring, glow }) => (
-    <div className="relative flex items-center gap-3 pl-12">
-      <span className={`absolute left-0 h-9 w-9 rounded-full grid place-items-center z-10 ${ring}`} style={glow ? { boxShadow: '0 0 22px 2px rgba(227,133,29,.6)' } : undefined}>{icon}</span>
-      <div><div className="font-display font-semibold text-[14px] text-white">{title}</div><div className="text-2xs text-white/55">{sub}</div></div>
-    </div>
-  );
+  const steps = [
+    { icon: Sun, num: '01', title: 'Sonne trifft aufs Dach', sub: 'PV-Anlage auf dem Mietshaus' },
+    { icon: Building2, num: '02', title: 'Strom direkt im Gebäude', sub: 'vor Ort genutzt, ohne Umweg übers Netz' },
+    { icon: Users, num: '03', title: 'Günstiger Strom für alle', sub: 'jede teilnehmende Wohnung profitiert' },
+  ];
+
   return (
-    <div className="nightpanel gridbg rounded-card-lg p-6 sm:p-7 shadow-glow relative overflow-hidden">
-      <div className="flex items-center gap-2 mb-6">
-        <span className="h-1.5 w-1.5 rounded-full bg-grass-live animate-glowpulse" />
-        <span className="text-2xs font-semibold uppercase tracking-[.16em] text-white/55">So fließt die Energie</span>
+    <div className="rounded-card-lg border border-line bg-paper p-6 sm:p-7">
+      <div className="flex items-center justify-between mb-6 pb-5 border-b border-line">
+        <span className="text-2xs font-semibold uppercase tracking-[.16em] text-ink-faint">Energiefluss im Gebäude</span>
+        <span className="text-2xs text-ink-faint">Schema</span>
       </div>
-      <div className="relative space-y-7">
-        <div className="absolute left-[18px] top-3 bottom-3 w-[3px] rounded-full current-charge" style={{ background: 'var(--flow-v)', boxShadow: '0 0 16px rgba(120,160,40,.5)' }} aria-hidden />
-        <Node icon={<Sun className="h-4 w-4 text-white" />} ring="bg-sun" glow title="Sonne trifft aufs Dach" sub="PV-Anlage auf dem Mietshaus" />
-        <Node icon={<Building2 className="h-4 w-4 text-white" />} ring="bg-grass" title="Strom direkt im Gebäude" sub="vor Ort genutzt, ohne Umweg übers Netz" />
-        <Node icon={<Users className="h-4 w-4 text-white" />} ring="bg-grass-deep" title="Günstiger Strom für alle" sub="jede teilnehmende Wohnung profitiert" />
+
+      <div className="relative space-y-0">
+        <div className="absolute left-[19px] top-2 bottom-2 w-px bg-line" aria-hidden />
+        {steps.map(({ icon: Icon, num, title, sub }, i) => (
+          <div key={num} className={`relative flex items-start gap-4 py-4 ${i !== steps.length - 1 ? 'border-b border-line/60' : ''}`}>
+            <span className="relative z-10 h-10 w-10 shrink-0 rounded-full border border-line bg-paper grid place-items-center">
+              <Icon className="h-4 w-4 text-grass-deep" />
+            </span>
+            <div className="pt-1.5">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xs font-display font-semibold text-ink-faint tabular-nums">{num}</span>
+                <div className="font-display font-semibold text-[14px] text-ink">{title}</div>
+              </div>
+              <div className="text-[13px] text-ink-soft mt-0.5">{sub}</div>
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="mt-7 pt-5 border-t border-night-line">
-        <p className="text-2xs text-white/55 leading-relaxed">Zwei Wege ins Haus: gemeinschaftliche Gebäudeversorgung oder Mieterstrom – EnergieFlow vergleicht beide und empfiehlt das passende.</p>
+
+      <div className="mt-5 pt-5 border-t border-line">
+        <p className="text-[13px] text-ink-soft leading-relaxed">Zwei Wege ins Haus: gemeinschaftliche Gebäudeversorgung oder Mieterstrom – EnergieFlow vergleicht beide und empfiehlt das passende.</p>
       </div>
     </div>
   );
