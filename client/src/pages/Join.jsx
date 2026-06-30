@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { LogoWide, Spinner } from '../components/ui.jsx';
+import { LogoWide, Spinner, Field } from '../components/ui.jsx';
 import { api } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { MapPin, Home, KeyRound, ArrowRight, AlertCircle } from 'lucide-react';
+
+const CONS_PRESETS = [['1 Pers.', 1500], ['2 Pers.', 2500], ['3 Pers.', 3600], ['4 Pers.', 4250], ['5+', 5200]];
 
 export default function Join() {
   const { token } = useParams();
@@ -13,16 +15,19 @@ export default function Join() {
   const [info, setInfo] = useState(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [verbrauch, setVerbrauch] = useState('');
 
   useEffect(() => { api.inviteInfo(token).then(setInfo).catch((e) => setErr(e.message)); }, [token]);
 
+  const isVermieter = info?.role === 'vermieter';
+  const isSelbstnutzer = info?.role === 'selbstnutzer';
+
   const join = async () => {
     setBusy(true); setErr('');
-    try { const full = await api.acceptInvite(token, {}); nav(`/projekt/${full.id}`, { replace: true }); }
+    const body = isVermieter ? {} : { verbrauch: verbrauch === '' ? null : Number(verbrauch) };
+    try { const full = await api.acceptInvite(token, body); nav(`/projekt/${full.id}`, { replace: true }); }
     catch (e) { setErr(e.message); setBusy(false); }
   };
-
-  const isVermieter = info?.role === 'vermieter';
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -42,8 +47,8 @@ export default function Join() {
 
         {info && (
           <div className="card p-7">
-            <span className={isVermieter ? 'chip-sun' : 'chip-grass'}>
-              {isVermieter ? 'Einladung für die Eigentümerseite' : 'Einladung in die Hausgemeinschaft'}
+            <span className={isVermieter || isSelbstnutzer ? 'chip-sun' : 'chip-grass'}>
+              {isVermieter ? 'Einladung für die Eigentümerseite' : isSelbstnutzer ? 'Einladung für selbstnutzende Eigentümer' : 'Einladung in die Hausgemeinschaft'}
             </span>
             <h1 className="text-2xl sm:text-3xl mt-4 mb-1">{info.project.name}</h1>
             {info.label && <p className="text-ink-soft -mt-1 mb-3">Persönlich für: <strong className="text-ink">{info.label}</strong></p>}
@@ -57,13 +62,29 @@ export default function Join() {
                 {isVermieter ? <KeyRound className="h-4 w-4 text-ink-faint" /> : <Home className="h-4 w-4 text-ink-faint" />}
                 {isVermieter
                   ? 'Du kannst alle Daten einsehen, die Analyse aktualisieren und Preise vorschlagen.'
-                  : 'Du kannst alle Daten einsehen und deinen Stromverbrauch bestätigen.'}
+                  : isSelbstnutzer
+                    ? 'Du wohnst hier und bist Miteigentümer: alle Daten einsehen, mitentscheiden und deinen Verbrauch hinterlegen.'
+                    : 'Du kannst alle Daten einsehen und deinen Stromverbrauch bestätigen.'}
               </div>
             </div>
 
             {loading ? <Spinner />
               : user ? (
                 <>
+                  {!isVermieter && (
+                    <div className="mb-4">
+                      <Field label="Dein Jahresstromverbrauch (kWh)" hint="Fließt direkt in die Wirtschaftlichkeit ein. Kann später ergänzt werden.">
+                        <input type="number" className="input tnum" value={verbrauch} onChange={(e) => setVerbrauch(e.target.value)} placeholder="2500" />
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <span className="text-2xs text-ink-faint mr-0.5">Unbekannt? Schätzen:</span>
+                          {CONS_PRESETS.map(([lbl, v]) => (
+                            <button key={lbl} type="button" onClick={() => setVerbrauch(String(v))}
+                              className="px-2 py-0.5 rounded-pill text-2xs font-medium border border-line bg-paper hover:border-grass/40 hover:bg-grass-soft/40 tnum">{lbl}</button>
+                          ))}
+                        </div>
+                      </Field>
+                    </div>
+                  )}
                   <button onClick={join} disabled={busy} className="btn-primary w-full !py-3">{busy ? 'Trete bei …' : 'Projekt beitreten'} <ArrowRight className="h-4 w-4" /></button>
                   <p className="text-[12px] text-ink-faint mt-3">Angemeldet als {user.name}.</p>
                 </>

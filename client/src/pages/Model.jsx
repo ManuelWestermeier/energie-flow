@@ -5,18 +5,18 @@ import { Scale, Check, X, ArrowRight } from 'lucide-react';
 export default function Model() {
   return (
     <div className="wrap py-12 max-w-4xl">
-      <PageHead eyebrow="Rechtsrahmen" title="Das GGV-Modell"
-        sub="Die gemeinschaftliche Gebäudeversorgung (GGV) nach §42b EnWG ist die rechtliche Grundlage, auf der EnergieFlow aufbaut – eingeführt mit dem Solarpaket I (2024)." />
+      <PageHead eyebrow="Rechtsrahmen" title="Die beiden Modelle: GGV und Mieterstrom"
+        sub="Mit dem Solarpaket I (2024) gibt es zwei Wege, Solarstrom ins Mietshaus zu bringen: die gemeinschaftliche Gebäudeversorgung (§42b EnWG) und Mieterstrom (§42a EnWG). EnergieFlow vergleicht beide neutral und empfiehlt das für euer Haus passende." />
 
       <Section title="Was ist die GGV?">
         <p>Bei der gemeinschaftlichen Gebäudeversorgung erzeugt eine PV-Anlage Strom auf dem Gebäude, der direkt
-        an die Bewohner:innen geliefert wird. Anders als bei einem Vollversorgungsmodell beziehen die Haushalte
+        an die Bewohner geliefert wird. Anders als bei einem Vollversorgungsmodell beziehen die Haushalte
         ihren <strong>Reststrom weiterhin frei</strong> von einem Lieferanten ihrer Wahl – die GGV liefert nur den
         vor Ort erzeugten Solarstrom. Das hält die Teilnahme einfach und das Risiko gering.</p>
       </Section>
 
       <Section title="GGV oder Mieterstrom – der Unterschied">
-        <p className="mb-4">Beide Modelle bringen Solarstrom ins Mietshaus, unterscheiden sich aber deutlich. Für EnergieFlow ist die GGV die tragfähigere Grundlage.</p>
+        <p className="mb-4">Beide Modelle bringen Solarstrom ins Mietshaus, unterscheiden sich aber deutlich. Welches besser passt, hängt vom Gebäude und der Eigentümerseite ab – EnergieFlow rechnet beide durch und empfiehlt.</p>
         <div className="card overflow-x-auto">
           <table className="tbl min-w-[520px]">
             <thead><tr><th>Merkmal</th><th>GGV (§42b)</th><th>Mieterstrom (§42a)</th></tr></thead>
@@ -24,7 +24,7 @@ export default function Model() {
               <Tr c="Rechtsgrundlage" a="§42b EnWG" b="§42a EnWG" />
               <Tr c="Preisgestaltung" a={<><Check className="inline h-3.5 w-3.5 text-grass-deep" /> frei verhandelbar</>} b={<><X className="inline h-3.5 w-3.5 text-danger" /> max. 90 % des Grundpreises</>} />
               <Tr c="Reststrombezug" a="frei beim eigenen Lieferanten" b="durch den Mieterstromanbieter" />
-              <Tr c="Eigenkapital Mieter:innen" a="keines erforderlich" b="keines erforderlich" />
+              <Tr c="Eigenkapital Mieter" a="keines erforderlich" b="keines erforderlich" />
               <Tr c="Administrativer Aufwand" a="geringer" b="höher (Lieferantenpflichten)" />
             </tbody>
           </table>
@@ -43,8 +43,8 @@ export default function Model() {
       <Section title="Wer macht was?">
         <ul className="space-y-2">
           <Li t="Hausgemeinschaft (Initiative)">organisiert sich, sammelt Zusagen und tritt gemeinsam auf.</Li>
-          <Li t="Eigentümerseite">stellt das Dach bereit, ist i. d. R. Betreiberin der Anlage und Vertragspartnerin.</Li>
-          <Li t="EnergieFlow">bündelt Daten, rechnet ehrlich, erzeugt Anschreiben und Verträge und führt durch den Prozess.</Li>
+          <Li t="Eigentümerseite">stellt das Dach bereit, ist i. d. R. Betreiber der Anlage und Vertragspartner.</Li>
+          <Li t="EnergieFlow">bündelt Daten, rechnet beide Modelle ehrlich, erzeugt Anschreiben und spricht eine Empfehlung aus. Die Umsetzung – Verträge, Anbieterwahl, Anlagenbau – ist aktuell nicht Teil der Plattform.</Li>
         </ul>
       </Section>
 

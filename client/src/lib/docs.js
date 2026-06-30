@@ -122,7 +122,7 @@ const FEINDATEN = [
 ];
 
 // ---------------------------------------------------------------------------
-//  1) Anschreiben an eine:n Vermieter:in (individuell, mit Einladungslink)
+//  1) Anschreiben an einen Vermieter (individuell, mit Einladungslink)
 // ---------------------------------------------------------------------------
 export function buildVermieterLetter(project, invite, opts = {}) {
   const { quotePct, sharePct, r } = calc(project, opts);
@@ -135,7 +135,7 @@ export function buildVermieterLetter(project, invite, opts = {}) {
 
     H1('Gemeinsame Solaranlage für unser Gebäude'),
     P(`sehr geehrte Damen und Herren,`, { after: 120 }),
-    P(`wir – mehrere Mieterinnen und Mieter Ihres Hauses – möchten gemeinsam eine ` +
+    P(`wir – mehrere Mieter Ihres Hauses – möchten gemeinsam eine ` +
       `Photovoltaikanlage auf dem Dach realisieren. Wir treten dabei nicht einzeln, ` +
       `sondern als organisierte Hausgemeinschaft an Sie heran. Bereits ${pct(quotePct, 0)} ` +
       `der Wohneinheiten haben Interesse signalisiert.`),
@@ -147,7 +147,7 @@ export function buildVermieterLetter(project, invite, opts = {}) {
 
     H2('Was wir vorschlagen'),
     ...bullets([
-      `Sie als Eigentümer bleiben Betreiber der Anlage; wir Mieter:innen beziehen den ` +
+      `Sie als Eigentümer bleiben Betreiber der Anlage; wir Mieter beziehen den ` +
         `Solarstrom direkt und zahlen dafür einen vereinbarten Preis.`,
       `Als fairen Ausgangspunkt schlagen wir ${pct(sharePct, 0)} des örtlichen ` +
         `Grundversorgungstarifs für den Solarstrom vor. Dieser Preis ist frei verhandelbar – ` +
@@ -166,7 +166,7 @@ export function buildVermieterLetter(project, invite, opts = {}) {
       ['Solarstrompreis (Vorschlag)', `${ct(r.solarpreis)} / kWh`],
       ['Jährlicher Überschuss (Eigentümer)', `${eur(r.netto)} / Jahr`],
       ['Rendite über ' + de(project.zeitraum) + ' Jahre', r.irr == null ? 'rechnet sich im Zeitraum noch nicht' : pct(r.irr * 100, 1) + ' p.a.'],
-      ['Ersparnis aller Mieter:innen', `${eur(r.tenantSavingsTotal)} / Jahr`],
+      ['Ersparnis aller Mieter', `${eur(r.tenantSavingsTotal)} / Jahr`],
       ['Vermiedenes CO₂', `${de(r.co2)} kg / Jahr`],
     ]),
     P(`Hinweis: Die Anlagen­rendite der GGV ist für sich genommen moderat. Ihr Vorteil liegt ` +
@@ -195,7 +195,7 @@ export function buildVermieterLetter(project, invite, opts = {}) {
 }
 
 // ---------------------------------------------------------------------------
-//  2) Anschreiben an Mitmieter:innen (Einladung ins Projekt)
+//  2) Anschreiben an Mitmieter (Einladung ins Projekt)
 // ---------------------------------------------------------------------------
 export function buildMitmieterLetter(project, invite, opts = {}) {
   const { quotePct, sharePct, r } = calc(project, opts);
@@ -216,9 +216,9 @@ export function buildMitmieterLetter(project, invite, opts = {}) {
       `Wir nutzen die gemeinschaftliche Gebäudeversorgung (GGV, §42b EnWG). Der Strom vom ` +
         `Dach wird direkt bei uns im Haus verbraucht.`,
       `Wir zahlen für den Solarstrom einen vereinbarten Preis – als fairen Startpunkt ` +
-        `${pct(sharePct, 0)} des Grundversorgungstarifs. Den Reststrom behält jede:r beim ` +
+        `${pct(sharePct, 0)} des Grundversorgungstarifs. Den Reststrom behält jeder beim ` +
         `eigenen Anbieter.`,
-      `Niemand muss Geld investieren: Betreiberin der Anlage bleibt die Eigentümerseite.`,
+      `Niemand muss Geld investieren: Betreiber der Anlage bleibt die Eigentümerseite.`,
     ]),
 
     H2('Was bisher gerechnet ist'),
@@ -239,6 +239,54 @@ export function buildMitmieterLetter(project, invite, opts = {}) {
     P(`Deine Nachbarin / dein Nachbar`, { bold: true }),
   ];
   return download(makeDoc(c), 'Anschreiben_Mitmieter.docx');
+}
+
+// ---------------------------------------------------------------------------
+//  2b) Anschreiben an selbstnutzende Eigentümer (Eigentümer, die selbst im Haus wohnen)
+// ---------------------------------------------------------------------------
+export function buildSelbstnutzerLetter(project, invite, opts = {}) {
+  const { quotePct, sharePct, r } = calc(project, opts);
+  const ziel = invite?.label ? invite.label : 'Eigentümer im Haus';
+  const c = [
+    ...brandHeader(),
+    Runs([{ text: 'An: ', color: FAINT }, { text: ziel, bold: true }], { after: 20 }),
+    P(`Objekt: ${adresse(project) || project.name}`, { color: FAINT, after: 160 }),
+
+    H1('Solar aufs Dach – Sie wohnen und besitzen hier'),
+    P(`sehr geehrte Eigentümerin, sehr geehrter Eigentümer,`, { after: 120 }),
+    P(`als Eigentümer, der selbst im Haus wohnt, profitieren Sie doppelt von einer gemeinsamen ` +
+      `Photovoltaikanlage: Als Bewohner beziehen Sie den Solarstrom günstiger als aus dem Netz, ` +
+      `und als Miteigentümer entscheiden Sie über die Dachnutzung mit. Bereits ${pct(quotePct, 0)} ` +
+      `der Wohneinheiten zeigen Interesse.`),
+    P(`Für die Umsetzung gibt es zwei Wege – die gemeinschaftliche Gebäudeversorgung (§42b EnWG) ` +
+      `und den Mieterstrom (§42a EnWG). Wir rechnen beide neutral durch und wählen gemeinsam das ` +
+      `Modell, das für unser Gebäude am besten passt. In beiden Fällen wird der Strom vom Dach ` +
+      `direkt im Haus verbraucht.`),
+
+    H2('Was das für Sie heißt'),
+    ...bullets([
+      `Als Bewohner zahlen Sie für den Solarstrom einen vereinbarten Preis – als fairen ` +
+        `Startpunkt ${pct(sharePct, 0)} des örtlichen Grundpreises.`,
+      `Als Miteigentümer reden Sie bei Anlage, Modellwahl und Preis mit.`,
+      `Bei der GGV behalten Sie den Reststrom bei Ihrem eigenen Anbieter. Eigenkapital ist nicht nötig.`,
+    ]),
+
+    H2('Wir brauchen Ihren Jahresverbrauch'),
+    P(`Damit die Rechnung gebäudegenau wird, geben Sie beim Beitritt bitte Ihren ` +
+      `Jahresstromverbrauch an (steht auf der Stromrechnung). Je mehr Verbrauch im Haus direkt ` +
+      `gedeckt wird, desto wirtschaftlicher ist die Anlage für alle.`, { after: 120 }),
+
+    H2('So treten Sie bei'),
+    P(`Über den folgenden Link treten Sie dem Projekt bei, sehen alle Daten und die laufende ` +
+      `Wirtschaftlichkeitsanalyse und hinterlegen Ihren Verbrauch:`),
+    invite ? Runs([{ text: 'Ihr Zugang: ', bold: true }, { text: link(opts.origin, invite.token), color: GREEN, bold: true }], { after: 160 })
+           : P('(Einladungslink wird beim Versand ergänzt.)', { italics: true, color: FAINT, after: 160 }),
+    P(`Mit freundlichen Grüßen`, { after: 40 }),
+    P(`Die Hausgemeinschaft ${adresse(project) || project.name}`, { bold: true }),
+    Spacer(),
+    P(`Dieses Schreiben ist ein Entwurf und ersetzt keine Rechts- oder Steuerberatung.`, { size: 16, color: FAINT, italics: true }),
+  ];
+  return download(makeDoc(c), `Anschreiben_Selbstnutzer_${(invite?.label || 'Eigentuemer').replace(/\s+/g, '_')}.docx`);
 }
 
 // ---------------------------------------------------------------------------
@@ -282,7 +330,7 @@ export function buildWirtschaftlichkeit(project, opts = {}) {
       ['Überschuss Eigentümerseite', `${eur(r.netto)} / Jahr`],
       ['Amortisation', r.amort == null ? '> Betrachtungszeitraum' : `${de(r.amort, 1)} Jahre`],
       ['Interne Rendite (IRR)', r.irr == null ? 'rechnet sich im Zeitraum nicht' : `${pct(r.irr * 100, 1)} p.a.`],
-      ['Ersparnis aller Mieter:innen', `${eur(r.tenantSavingsTotal)} / Jahr`],
+      ['Ersparnis aller Mieter', `${eur(r.tenantSavingsTotal)} / Jahr`],
       ['Ersparnis je Haushalt', `${eur(r.tenantSavingsPerHH)} / Jahr`],
       ['Vermiedenes CO₂', `${de(r.co2)} kg / Jahr`],
     ]),
@@ -297,81 +345,4 @@ export function buildWirtschaftlichkeit(project, opts = {}) {
       { size: 18, color: FAINT, italics: true }),
   ];
   return download(makeDoc(c), 'Wirtschaftlichkeitsanalyse.docx');
-}
-
-// ---------------------------------------------------------------------------
-//  4) GGV-Stromliefervertrag (Entwurf, je Mieter:in)
-// ---------------------------------------------------------------------------
-export function buildVertrag(project, mieter, opts = {}) {
-  const { sharePct, r } = calc(project, opts);
-  const vermieter = (project.members || []).find(m => m.role === 'vermieter');
-  const c = [
-    ...brandHeader(),
-    H1('Vertrag über gemeinschaftliche Gebäudeversorgung'),
-    P(`(Stromliefervertrag im Sinne des §42b EnWG – Entwurf)`, { color: FAINT, after: 160 }),
-
-    H2('Vertragsparteien'),
-    dataTable([
-      ['Anlagenbetreiber (Eigentümerseite)', vermieter?.name || '________________________'],
-      ['Abnehmer:in (Mieter:in)', mieter?.name || '________________________'],
-      ['Wohnung', mieter?.wohnung || '________'],
-      ['Gebäude', adresse(project) || project.name],
-    ]),
-
-    H2('§1 Gegenstand'),
-    P(`Der Anlagenbetreiber betreibt auf dem oben genannten Gebäude eine Photovoltaikanlage ` +
-      `mit rund ${de(project.kwp)} kWp und liefert den darin erzeugten Strom im Wege der ` +
-      `gemeinschaftlichen Gebäudeversorgung (§42b EnWG) an die im Gebäude beteiligten ` +
-      `Letztverbraucher. Gegenstand dieses Vertrags ist die Belieferung der/des oben ` +
-      `genannten Abnehmer:in mit diesem vor Ort erzeugten Strom.`),
-
-    H2('§2 Preis'),
-    Runs([
-      { text: `Der Preis für den gelieferten Solarstrom beträgt ` },
-      { text: `${pct(sharePct, 0)} des jeweils gültigen örtlichen Grundversorgungstarifs`, bold: true },
-      { text: `, derzeit ${ct(r.solarpreis)} je Kilowattstunde. ` },
-    ]),
-    P(`Die Parteien stellen ausdrücklich klar, dass für die GGV nach §42b EnWG keine ` +
-      `gesetzliche Preisobergrenze gilt; der vereinbarte Anteil wurde frei verhandelt. ` +
-      `Eine Anpassung erfolgt, wenn sich der Grundversorgungstarif ändert.`),
-
-    H2('§3 Reststrom'),
-    P(`Strom, der über die Eigenerzeugung hinaus benötigt wird, bezieht die/der Abnehmer:in ` +
-      `weiterhin von einem frei gewählten Energieversorger. Es besteht keine Pflicht des ` +
-      `Anlagenbetreibers zur Vollversorgung.`),
-
-    H2('§4 Messung & Abrechnung'),
-    P(`Die Erfassung erfolgt über ein geeignetes Messkonzept (i. d. R. Summenzähler je ` +
-      `Wohneinheit). Abgerechnet wird jährlich auf Basis der tatsächlich gelieferten Mengen. ` +
-      `Der Anlagenbetreiber stellt eine nachvollziehbare Abrechnung bereit.`),
-
-    H2('§5 Laufzeit'),
-    P(`Der Vertrag läuft ab Inbetriebnahme der Anlage und kann mit einer Frist von drei ` +
-      `Monaten zum Monatsende gekündigt werden, frühestens nach zwölf Monaten. Ein Umzug der/des ` +
-      `Abnehmer:in beendet den Vertrag zum Auszugsdatum.`),
-
-    H2('§6 Schlussbestimmungen'),
-    P(`Änderungen bedürfen der Textform. Sollte eine Bestimmung unwirksam sein, bleibt der ` +
-      `übrige Vertrag wirksam.`),
-
-    Spacer(),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder, insideHorizontal: noBorder, insideVertical: noBorder },
-      rows: [new TableRow({ children: [
-        new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [
-          new Paragraph({ spacing: { before: 400 }, border: { top: { style: BorderStyle.SINGLE, size: 4, color: INK } }, children: [new TextRun({ text: 'Ort, Datum, Anlagenbetreiber', size: 18, color: FAINT, font: 'Calibri' })] }),
-        ] }),
-        new TableCell({ width: { size: 6, type: WidthType.PERCENTAGE }, children: [new Paragraph('')] }),
-        new TableCell({ width: { size: 44, type: WidthType.PERCENTAGE }, children: [
-          new Paragraph({ spacing: { before: 400 }, border: { top: { style: BorderStyle.SINGLE, size: 4, color: INK } }, children: [new TextRun({ text: 'Ort, Datum, Abnehmer:in', size: 18, color: FAINT, font: 'Calibri' })] }),
-        ] }),
-      ] })],
-    }),
-    Spacer(),
-    P(`Dies ist ein unverbindlicher Muster-Entwurf zur Orientierung und ersetzt keine ` +
-      `anwaltliche Prüfung. Vor Unterzeichnung sollte fachkundiger Rat eingeholt werden.`,
-      { size: 16, color: FAINT, italics: true }),
-  ];
-  return download(makeDoc(c), `GGV_Vertrag_${(mieter?.name || 'Mieter').replace(/\s+/g, '_')}.docx`);
 }

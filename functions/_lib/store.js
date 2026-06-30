@@ -90,14 +90,14 @@ export function setTask(db, projectId, taskId, done, byName) {
 }
 
 // ---- Mitglieder ------------------------------------------------------------
-export function addMember(db, projectId, userId, { role = 'mieter', household, wohnung } = {}) {
+export function addMember(db, projectId, userId, { role = 'mieter', household, wohnung, verbrauch } = {}) {
   const existing = db.members.find((m) => m.project_id === projectId && m.user_id === userId);
   if (existing) return existing.id;
   const id = 'm_' + nid(10);
   db.members.push({
     id, project_id: projectId, user_id: userId, role,
     household: household ?? null, wohnung: wohnung ?? null,
-    status: 'beigetreten', verbrauch: null, confirmed: 0, joined_at: now(),
+    status: 'beigetreten', verbrauch: verbrauch == null ? null : Number(verbrauch), confirmed: 0, joined_at: now(),
   });
   return id;
 }
@@ -126,14 +126,28 @@ export const getInviteByToken = (db, token) => db.invites.find((i) => i.token ==
 export function bumpInvite(db, id) { const i = db.invites.find((x) => x.id === id); if (i) i.used_count += 1; }
 
 // ---- Vorschläge ------------------------------------------------------------
-export function addProposal(db, projectId, { by_user_id, by_role, by_name, share_pct, quote_pct, params, result, note }) {
+// kind: 'price' | 'data'   ·   status: 'pending' | 'approved' | 'rejected'
+// Mietervorschläge sind 'pending' und werden erst nach Freigabe durch den Admin
+// wirksam/sichtbar; Vorschläge von Admin/Eigentümerseite sind direkt 'approved'.
+export function addProposal(db, projectId, { kind = 'price', status = 'approved', by_user_id, by_role, by_name, share_pct, quote_pct, params, result, patch, note }) {
   const id = 'pr_' + nid(10);
   db.proposals.push({
-    id, project_id: projectId, by_user_id, by_role, by_name,
-    share_pct: Number(share_pct), quote_pct: quote_pct == null ? null : Number(quote_pct),
-    params: params || {}, result: result || {}, note: note ?? null, created_at: now(),
+    id, project_id: projectId, kind, status,
+    by_user_id, by_role, by_name,
+    share_pct: share_pct == null ? null : Number(share_pct),
+    quote_pct: quote_pct == null ? null : Number(quote_pct),
+    params: params || {}, result: result || {}, patch: patch || null,
+    note: note ?? null, created_at: now(), decided_at: null, decided_by: null,
   });
   return id;
+}
+export const getProposal = (db, projectId, proposalId) =>
+  db.proposals.find((pr) => pr.id === proposalId && pr.project_id === projectId) || null;
+export function setProposalStatus(db, projectId, proposalId, status, byName) {
+  const pr = getProposal(db, projectId, proposalId);
+  if (!pr) return null;
+  pr.status = status; pr.decided_at = now(); pr.decided_by = byName ?? null;
+  return pr;
 }
 
 // ---- Zustimmungen ----------------------------------------------------------
@@ -156,7 +170,7 @@ export function listActivity(db, projectId, limit = 100) {
 }
 
 // ---- Vollständiger Projektzustand ------------------------------------------
-export function fullProject(db, id) {
+export function fullProject(db, id, viewer = null) {
   const p = rawProject(db, id);
   if (!p) return null;
 
@@ -174,6 +188,13 @@ export function fullProject(db, id) {
   const agreedCount = active.filter(agreedAt).length;
   const consensus = active.length > 0 && agreedCount === active.length;
 
+  // Sichtbarkeit der Vorschläge: Der Admin moderiert und sieht alle; alle anderen
+  // sehen nur freigegebene Vorschläge sowie ihre eigenen (offen/abgelehnt).
+  const canModerate = viewer?.role === 'admin';
+  const visibleProposals = proposals.filter((pr) =>
+    canModerate || (pr.status || 'approved') === 'approved' || pr.by_user_id === viewer?.userId);
+  const pendingCount = canModerate ? proposals.filter((pr) => (pr.status || 'approved') === 'pending').length : 0;
+
   return {
     ...p,
     intake: p.intake || null,
@@ -184,7 +205,8 @@ export function fullProject(db, id) {
       verbrauch: m.verbrauch, confirmed: !!m.confirmed, agreed: agreedAt(m),
     })),
     invites: invites.map((i) => ({ id: i.id, token: i.token, role: i.role, label: i.label, email: i.email, used: i.used_count })),
-    proposals: proposals.map((pr) => ({ ...pr })),
+    proposals: visibleProposals.map((pr) => ({ ...pr })),
+    pendingCount,
     consent: { agreedCount, activeCount: active.length, consensus },
     activity: listActivity(db, id, 12),
   };

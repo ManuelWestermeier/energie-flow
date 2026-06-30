@@ -6,7 +6,7 @@ import { dateDE } from '../../lib/format.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Settings as Cog, Check } from 'lucide-react';
 
-const ROLE_LABEL = { admin: 'Admin (Initiative)', mieter: 'Mieter:in', vermieter: 'Eigentümerseite' };
+const ROLE_LABEL = { admin: 'Admin (Initiative)', mieter: 'Mieter', vermieter: 'Eigentümerseite' };
 
 export default function Settings() {
   const { project, setProject, canEdit, me } = useProject();

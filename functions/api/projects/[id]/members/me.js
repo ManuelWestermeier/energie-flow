@@ -26,5 +26,5 @@ export async function onRequestPost({ request, env, params }) {
   else if (!becameYes && !withdrew && !vChanged && confirmed) logActivity(db, id, { type: 'member', actorName: user.name, text: 'hat die eigenen Daten bestätigt' });
 
   await persist(env, db);
-  return json(fullProject(db, id));
+  return json(fullProject(db, id, { userId: user.id, role: before.role }));
 }

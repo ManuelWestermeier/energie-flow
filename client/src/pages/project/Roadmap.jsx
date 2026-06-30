@@ -27,8 +27,8 @@ export default function Roadmap() {
     <div>
       <PageHead
         eyebrow="Fahrplan"
-        title="Von der Idee zur Anlage"
-        sub="Sechs Phasen begleiten euch Schritt für Schritt. Automatische Häkchen erkennt das System selbst, die übrigen hakt ihr ab, wenn ihr sie erledigt habt."
+        title="Von der Idee zur Modell-Empfehlung"
+        sub="Sechs Phasen führen euch von der Idee bis zur Empfehlung, welches Modell passt. Automatische Häkchen erkennt das System selbst, die übrigen hakt ihr ab, wenn ihr sie erledigt habt."
         actions={<div className="hidden sm:block"><Donut value={ov.pct} size={64} /></div>}
       />
 
@@ -100,6 +100,11 @@ export default function Roadmap() {
             );
           })}
         </ol>
+      </div>
+
+      <div className="mt-6 card p-4 bg-paper-2">
+        <div className="eyebrow mb-1">Ausblick · noch nicht Teil der Plattform</div>
+        <p className="text-[13px] text-ink-soft">Heute endet EnergieFlow bei der Modell-Empfehlung. In einer späteren Ausbaustufe soll die Plattform den GGV-Prozess weiter begleiten bzw. beim Mieterstrom an einen Anbieter vermitteln – und an einen Anlagenbauer.</p>
       </div>
 
       <div className="mt-6">

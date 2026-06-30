@@ -43,7 +43,7 @@ export default function Overview() {
       </div>
 
       {project.feindaten ? (
-        <InfoNote tone="grass">Diese Zahlen beruhen auf <strong>hinterlegten Feindaten</strong> – belastbare Grundlage für Verhandlung und Verträge.</InfoNote>
+        <InfoNote tone="grass">Diese Zahlen beruhen auf <strong>hinterlegten Feindaten</strong> – belastbare Grundlage für Verhandlung und Empfehlung.</InfoNote>
       ) : (
         <InfoNote>Aktuell <strong>erste Schätzung</strong> auf Basis von Durchschnittswerten. Mit Feindaten der Eigentümerseite werden die Zahlen gebäudegenau. <Link to="../gebaeude" className="link">Feindaten erfassen →</Link></InfoNote>
       )}

@@ -1,8 +1,8 @@
 # Cloudflare Pages – Konfiguration
 # Statische Assets kommen aus ./dist (Vite-Build), die API aus ./functions.
-
-name = "e-flow"
+name = "energieflow"
 pages_build_output_dir = "dist"
+compatibility_date = "2024-11-01"
 
 # Persistenz: ein KV-Namespace, Binding-Name "DB" (in den Functions: env.DB).
 # Lokal (wrangler pages dev) wird automatisch ein lokaler KV-Store benutzt –
@@ -10,7 +10,7 @@ pages_build_output_dir = "dist"
 #   1) Namespace anlegen:   npx wrangler kv namespace create DB
 #                           npx wrangler kv namespace create DB --preview
 #   2) Die ausgegebenen IDs hier eintragen (oder im Pages-Dashboard binden).
-
 [[kv_namespaces]]
 binding = "DB"
-id = "504df082f62340aaaa88c951076c2ff5"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"

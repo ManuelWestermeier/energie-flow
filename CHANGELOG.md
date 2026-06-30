@@ -1,5 +1,161 @@
 # Changelog
 
+## 4.6.0 – Design-Feinschliff (Systemebene)
+
+Eine kohaerente Verfeinerungsschicht ueber Tokens und geteilte Komponenten – wirkt site-weit,
+im bestehenden Charakter (Solar-Palette, „Strom"-Signature), ohne Layout-Bruch.
+
+### Geaendert
+- **Elevation**: Karten-Schatten von flach auf weich-geschichtet umgestellt – Karten heben sich
+  ruhiger von der Flaeche ab (Token `shadow-card`), neuer `shadow-card-hover` fuer interaktive Flaechen.
+- **Seitenkopf**: vor jeder Ueberschrift eine kleine Marken-Flussmarkierung (gruen→orange),
+  als wiederkehrendes, gegruendetes Detail.
+- **Hinweisboxen**: farbiger Akzentstreifen links (Info/Gruen/Orange) statt flachem Kasten.
+- **Buttons**: dezenter Hover-Lift und feinere Schatten fuer mehr Haptik (primaer/orange).
+- **Textsatz**: schoenere Absatzumbrueche (`text-wrap: pretty`) und bessere Schriftglaettung.
+- **Eingaben/Modal/Avatar**: weicherer Fokus-Uebergang, ruhigerer Modal-Hintergrund, feiner
+  Avatar-Ring.
+
+### Hinweis
+- Bewusst maßvoll und systemweit gehalten. Einzelne Schluesselflaechen (Startseite-Hero,
+  Dashboard) lassen sich auf Wunsch gezielt weiter zuspitzen.
+
+## 4.5.0 – Scope: Ende bei der Empfehlung (Vertraege entfernt, Fahrplan angepasst)
+
+Die Plattform endet bei der Modell-Empfehlung an die Eigentuemerseite. Die Vertrags-/
+Umsetzungsfunktionen wurden entfernt; Anschreiben und Wirtschaftlichkeitsanalyse bleiben als
+Aktivierungs- und Empfehlungs-Unterlagen erhalten.
+
+### Entfernt
+- **Vertragsgenerator** (`buildVertrag`, GGV-Stromliefervertrag je Wohnung) aus `docs.js` und
+  der zugehoerige Bereich „GGV-Vertraege je Wohnung" auf der Dokumente-Seite.
+
+### Geaendert
+- **Dokumente-Seite**: Kopf „Anschreiben & Analyse erzeugen"; nur noch Wirtschaftlichkeits-
+  analyse und Anschreiben (Mitmieter, Eigentuemerseite, selbstnutzende Eigentuemer). Hinweis
+  benennt jetzt den Scope (Verträge/Anbieter/Anlagenbau = kuenftige Ausbaustufe).
+- **Fahrplan** (`phases.js`): Phase 6 „Verträge & Umsetzung" → „Modell empfehlen & entscheiden"
+  (Modellvergleich ansehen, Analyse als Unterlage erzeugen, Modellentscheidung treffen).
+- **Roadmap-Seite**: Titel „Von der Idee zur Modell-Empfehlung"; neuer **Ausblick** auf die
+  kuenftige Ausbaustufe (GGV-Weiterbetreuung bzw. Vermittlung an Mieterstrom-Anbieter und
+  Anlagenbauer) – klar als noch nicht Teil der Plattform gekennzeichnet.
+
+## 4.4.0 – Selbstnutzende Eigentuemer als Teilnehmertyp
+
+Eigentuemer, die selbst im Haus wohnen, sind zugleich Miteigentuemer und verbrauchende
+Haushalte. Sie haben jetzt eine eigene Rolle (`selbstnutzer`) mit eigenen Einladungs-Links
+und Anschreiben und werden – wie Mieter – nach ihrem Jahresverbrauch gefragt. Anders als die
+reine Eigentuemerseite (`vermieter`) zaehlen sie als Verbraucher in die Analyse und in die
+Beteiligung.
+
+### Neu
+- **Rolle „selbstnutzende Eigentuemer"**: eigener Einladungs-Link unter „Hausgemeinschaft"
+  (dritte Spalte), eigenes Rollen-Label in der Mitgliederliste, rollengerechte Texte auf der
+  Beitritts-Seite.
+- **Anschreiben** fuer selbstnutzende Eigentuemer (`buildSelbstnutzerLetter`) mit Beitritts-Link
+  und Verbrauchsabfrage, modell-neutral; als eigener Bereich auf der Dokumente-Seite.
+- **Verbrauchsabfrage** greift fuer Selbstnutzer wie fuer Mieter (Beitritts-Flow); sie zaehlen
+  ueber `consumptionStats` und `committedQuote` als verbrauchende, beteiligte Haushalte.
+
+### Hinweis
+- Rechte: Selbstnutzer schlagen Anlagendaten/Preis vor (wie Mieter) und stimmen zu; direkte
+  Aenderungen bleiben Admin und Eigentuemerseite vorbehalten.
+
+## 4.3.0 – Genehmigungs-Workflow fuer Mietervorschlaege
+
+Eingeladene Mieter koennen Anlagen-/Hausdaten und den Preis nur noch **vorschlagen**; der
+**Admin (Projektleitung) gibt frei oder lehnt ab**, bevor ein Vorschlag wirksam und fuer die
+anderen Mieter sichtbar wird. Admin und Eigentuemerseite wirken weiterhin direkt.
+
+### Neu
+- **Vorschlaege mit Status**: Datenmodell erweitert um `kind` (price/data) und `status`
+  (pending/approved/rejected) sowie `patch` fuer Datenvorschlaege. Mietervorschlaege sind
+  `pending`, Vorschlaege von Admin/Eigentuemerseite direkt `approved`.
+- **Betrachter-Filter** in `fullProject`: Der Admin sieht alle Vorschlaege (Review-Queue),
+  alle anderen nur freigegebene plus die eigenen – offene Vorschlaege bleiben fuer die uebrige
+  Hausgemeinschaft unsichtbar.
+- **Freigabe-Endpunkt** (`PATCH /proposals`, nur Admin): genehmigt (wendet Preis bzw.
+  Datenaenderung an) oder lehnt ab; bei Preisfreigabe werden die Zustimmungen zurueckgesetzt.
+- **Verhandlung**: rollenabhaengiges Preis-Panel (festlegen vs. vorschlagen), Admin-Review-Queue
+  „Offene Vorschlaege" mit Genehmigen/Ablehnen, Status-Kennzeichnung im Verlauf.
+- **Gebaeude**: Mieter koennen Anlagendaten **vorschlagen** (nur geaenderte Felder), mit Hinweis
+  auf den ausstehenden Freigabestatus; Admin/Eigentuemerseite bearbeiten weiterhin direkt.
+
+### Hinweis
+- Der Fahrplan-Auto-Schritt „Preis verhandelt" zaehlt jetzt nur noch freigegebene Preisvorschlaege.
+
+## 4.2.2 – Neutralisierung der uebrigen Seiten
+
+Die GGV-Bevorzugung wurde auf den verbleibenden Flaechen entfernt; beide Modelle (GGV §42b
+und Mieterstrom §42a) werden ueberall gleichwertig dargestellt. Vertragsversprechen in der
+oeffentlichen Darstellung sind ersetzt (Scope endet bei der Empfehlung).
+
+### Geaendert
+- **FAQ**: Antworten zu Investition, bestehendem Stromvertrag, 90-%-Grenze und Balkonkraftwerk
+  auf beide Modelle umgestellt; die Vertrags-Frage durch eine Frage zu den erstellten Unterlagen
+  ersetzt (Anschreiben + Analyse statt Vertraege).
+- **So funktioniert's**: Intro und "Was EnergieFlow uebernimmt" modell-neutral und scope-ehrlich.
+- **Wie wir rechnen**: Rechenbeispiel als GGV-Variante gekennzeichnet, Mieterstrom-Unterschiede
+  benannt; GGV-bevorzugende Formulierungen entfernt.
+- **Footer & Navigation**: "Das GGV-Modell" → "Die Modelle"; Footer nennt beide Modelle;
+  Vertrags-Hinweis entfernt.
+- **Projektseiten** (Ueberblick, Verhandlung, Gebaeude): Preis-Hinweis nennt beide Modelle;
+  "Vertraege" → "Empfehlung"/"Unterlagen" in der Verlinkung.
+
+### Hinweis
+- Die Seite "Dokumente" und der Fahrplan (phases.js) bleiben bewusst unveraendert – ihre
+  Neutralisierung erfolgt zusammen mit dem Entfernen des Vertrags-/Dokumententeils (Punkt 4).
+
+## 4.2.1 – Verbrauchsabfrage bei Erstellung und Beitritt
+
+Der eigene Jahresstromverbrauch wird jetzt direkt beim **Anlegen** eines Projekts (Schnell-
+rechner, Schritt "Dach & Module") und beim **Beitritt** ueber einen Einladungslink abgefragt –
+statt erst nachtraeglich auf der Hausgemeinschaft-Seite. Er wird am Mitglied gespeichert und
+fliesst unmittelbar in die Wirtschaftlichkeitsanalyse ein (consumptionStats → consumptionFactor).
+
+### Neu
+- **Verbrauchsfeld** im Erstellungs-Flow (fuer die anlegende Person) und im Beitritts-Flow
+  (fuer beitretende Mieter), jeweils mit Schaetz-Presets nach Haushaltsgroesse.
+- Backend: `addMember` nimmt `verbrauch` entgegen; Erstellung und Beitritt reichen ihn durch
+  und protokollieren ihn in der Aktivitaet.
+- Die Eigentuemerseite wird bewusst nicht nach Verbrauch gefragt (kein verbrauchender Haushalt;
+  selbstnutzende Eigentuemer folgen als eigener Teilnehmertyp).
+
+## 4.2.0 – Dual-Modell & neutrale Positionierung
+
+Die Plattform rechnet jetzt **beide Modelle** (GGV und Mieterstrom) fuer dasselbe Gebaeude
+und positioniert sich durchgehend **neutral** zwischen beiden. Die Arbeit der Plattform
+endet bei der **Modell-Empfehlung an die Eigentuemerseite** – Vertraege, Anbieterwahl und
+Anlagenbau sind aktuell nicht Teil (geplante Zukunfts-Ausbaustufe: GGV-Weiterbetreuung bzw.
+Vermittlung an Mieterstrom-Anbieter und Anlagenbauer).
+
+### Neu
+- **Mieterstrom-Modell** in der Wirtschaftlichkeits-Engine, an der Ariadne-Basisvariante
+  (Tabelle 9, 30 kWp / 8 WE) kalibriert: reproduziert Ueberschuss, internen Zinsfuss
+  (1,4 % GGV / 3,6 % Mieterstrom) und Amortisation (17,3 / 14,0 Jahre). Mieterstromzuschlag
+  (rd. 2,1 ct/kWh auf direkt gelieferten PV-Strom) und Reststrom-Nettomarge (rd. 76,5 € je
+  teilnehmendem Haushalt) als dokumentierte, quellenbasierte Annahmen.
+- **GGV/Mieterstrom-Schalter** auf der Wirtschaftlichkeitsseite: Kennzahlen, Hebel-Diagramm,
+  Sensitivitaetsmatrix und Aufschluesselung rechnen fuer das gewaehlte Modell; beim Mieterstrom
+  zusaetzliche Zeilen fuer Zuschlag und Reststrommarge.
+- **Neutraler Modellvergleich** (vormals einseitige Empfehlung): beide Modelle mit echten
+  Zahlen nebeneinander, faktenbasierte Empfehlung je Gebaeude und der ehrliche Hinweis, dass
+  Mieterstrom meist renditestaerker ist, waehrend die Faktoren ueber die Eignung entscheiden.
+
+### Geaendert
+- **Neutrale Positionierung** site-weit begonnen: GGV-Bevorzugung ("Rueckgrat/Speerspitze/
+  tragfaehigere Grundlage") entfernt auf Startseite, Modell-Seite und Wirtschaftlichkeit.
+- **Startseite ohne Zahlen**: alle werblichen Kennzahlen entfernt, qualitative Darstellung.
+- **Scope-Korrektur**: keine Vertragsversprechen mehr in der oeffentlichen Darstellung.
+- **Nicht gendern**: alle gegenderten Formen site-weit entfernt (generisches Maskulinum).
+
+### Offen (naechste Durchgaenge)
+- Verbrauchsabfrage bei Projekterstellung und Beitritt
+- Genehmigungs-Workflow: Mietervorschlaege zu Anlagen-/Hausdaten und Preis, vom Admin freigegeben
+- Selbstnutzende Eigentuemer als Teilnehmertyp inkl. Anschreiben/Links
+- Vertrags-/Dokumentenerzeugung entfernen (Scope), Roadmap/Phasen anpassen
+- Restliche Seiten neutralisieren, Design-Ueberarbeitung
+
 ## 4.1.0 – Modellempfehlung: GGV oder Mieterstrom je Gebäude (beratend)
 
 Die Wirtschaftlichkeit zeigt jetzt zuerst eine **beratende Empfehlung**, welches Modell

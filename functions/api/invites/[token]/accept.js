@@ -9,10 +9,16 @@ export async function onRequestPost({ request, env, params }) {
   const inv = getInviteByToken(db, params.token);
   if (!inv) return err('Einladung nicht gefunden.', 404);
   const body = await readJson(request);
-  addMember(db, inv.project_id, user.id, { role: inv.role, household: body.household || user.name, wohnung: body.wohnung });
+  const isOwnerSide = inv.role === 'vermieter';
+  const verbrauch = isOwnerSide ? null : body.verbrauch;
+  addMember(db, inv.project_id, user.id, { role: inv.role, household: body.household || user.name, wohnung: body.wohnung, verbrauch });
   bumpInvite(db, inv.id);
-  if (inv.role === 'vermieter') updateProject(db, inv.project_id, { status: 'verhandeln' });
-  logActivity(db, inv.project_id, { type: 'join', actorName: user.name, text: inv.role === 'vermieter' ? 'ist als Eigentümerseite beigetreten' : 'ist der Hausgemeinschaft beigetreten' });
+  if (isOwnerSide) updateProject(db, inv.project_id, { status: 'verhandeln' });
+  const joinText = inv.role === 'vermieter' ? 'ist als Eigentümerseite beigetreten'
+    : inv.role === 'selbstnutzer' ? 'ist als selbstnutzender Eigentümer beigetreten'
+    : 'ist der Hausgemeinschaft beigetreten';
+  logActivity(db, inv.project_id, { type: 'join', actorName: user.name, text: joinText });
+  if (Number(verbrauch) > 0) logActivity(db, inv.project_id, { type: 'consumption', actorName: user.name, text: `hat den Jahresverbrauch hinterlegt (${Math.round(Number(verbrauch)).toLocaleString('de-DE')} kWh)` });
   await persist(env, db);
-  return json(fullProject(db, inv.project_id));
+  return json(fullProject(db, inv.project_id, { userId: user.id, role: inv.role }));
 }

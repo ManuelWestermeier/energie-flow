@@ -27,10 +27,11 @@ export async function onRequest({ request, env }) {
       share_pct: d.share_pct ?? 90,
       intake: d.intake || d,
     });
-    addMember(db, id, user.id, { role: 'admin', wohnung: d.wohnung, household: user.name });
+    addMember(db, id, user.id, { role: 'admin', wohnung: d.wohnung, household: user.name, verbrauch: d.verbrauch });
     logActivity(db, id, { type: 'create', actorName: user.name, text: 'hat das Projekt angelegt' });
+    if (Number(d.verbrauch) > 0) logActivity(db, id, { type: 'consumption', actorName: user.name, text: `hat den Jahresverbrauch hinterlegt (${Math.round(Number(d.verbrauch)).toLocaleString('de-DE')} kWh)` });
     await persist(env, db);
-    return json(fullProject(db, id));
+    return json(fullProject(db, id, { userId: user.id, role: 'admin' }));
   }
 
   return err('Methode nicht erlaubt.', 405);

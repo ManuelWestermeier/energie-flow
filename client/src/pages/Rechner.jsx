@@ -26,6 +26,7 @@ const STEPS = [
 ];
 const PEND = 'ef_pv_pending';
 const PAYL = 'ef_pv_payload';
+const CONS_PRESETS = [['1 Pers.', 1500], ['2 Pers.', 2500], ['3 Pers.', 3600], ['4 Pers.', 4250], ['5+', 5200]];
 
 function nearestBuilding(buildings, lat, lon) {
   let best = null, bd = Infinity;
@@ -63,6 +64,7 @@ export default function Rechner() {
   const [loss, setLoss] = useState(14);
   const [we, setWe] = useState(8);
   const [gvpreis, setGvpreis] = useState(35);
+  const [verbrauch, setVerbrauch] = useState('');
   const [manualKwp, setManualKwp] = useState(null);
 
   // Simulation
@@ -133,6 +135,7 @@ export default function Rechner() {
       ertrag: sim?.perKwp ? Math.round(sim.perKwp) : 900,
       invest: suggestInvest(kwp), opex: suggestOpex(kwp),
       gvpreis: Number(gvpreis) || 35, arbeitspreis: Number(gvpreis) || 35, share_pct: 90,
+      verbrauch: verbrauch === '' ? null : Number(verbrauch),
       intake: {
         source: 'pv-planer', lat: picked?.lat, lon: picked?.lon, label: picked?.label,
         roofType, tilt, azimuth: az, loss, usable, footprintM2, height: selected ? estimateHeight(selected) : null,
@@ -270,11 +273,23 @@ export default function Rechner() {
 
             <Card>
               <div className="grid sm:grid-cols-2 gap-4">
-                <Field label="Wohneinheiten im Haus" hint="Für die spätere Wirtschaftlichkeit (GGV).">
+                <Field label="Wohneinheiten im Haus" hint="Für die spätere Wirtschaftlichkeit.">
                   <input type="number" min="2" className="input tnum" value={we} onChange={(e) => setWe(e.target.value)} />
                 </Field>
                 <Field label="Aktueller Strompreis (ct/kWh)" hint="Grundpreis je kWh – steht auf der Stromrechnung.">
                   <input type="number" step="0.1" className="input tnum" value={gvpreis} onChange={(e) => setGvpreis(e.target.value)} />
+                </Field>
+              </div>
+              <div className="mt-4 pt-4 border-t border-line">
+                <Field label="Dein eigener Jahresstromverbrauch (kWh)" hint="Fließt direkt in die Wirtschaftlichkeit ein. Steht auf der Stromrechnung – kann später ergänzt werden.">
+                  <input type="number" className="input tnum" value={verbrauch} onChange={(e) => setVerbrauch(e.target.value)} placeholder="2500" />
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className="text-2xs text-ink-faint mr-0.5">Unbekannt? Schätzen:</span>
+                    {CONS_PRESETS.map(([lbl, v]) => (
+                      <button key={lbl} type="button" onClick={() => setVerbrauch(String(v))}
+                        className="px-2 py-0.5 rounded-pill text-2xs font-medium border border-line bg-paper hover:border-grass/40 hover:bg-grass-soft/40 tnum">{lbl}</button>
+                    ))}
+                  </div>
                 </Field>
               </div>
             </Card>

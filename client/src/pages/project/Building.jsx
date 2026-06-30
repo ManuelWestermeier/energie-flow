@@ -20,11 +20,13 @@ const FIELDS = [
 ];
 
 export default function Building() {
-  const { project, setProject, canEdit } = useProject();
+  const { project, setProject, canEdit, me } = useProject();
   const E = paramsFromProject(project);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({});
+  const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const myPendingData = (project.proposals || []).some((p) => p.kind === 'data' && (p.status || '') === 'pending' && p.by_user_id === me?.userId);
 
   const fmt = (k) => {
     const v = E[k];
@@ -48,6 +50,15 @@ export default function Building() {
     try { setProject(await api.patchProject(project.id, { feindaten: !project.feindaten })); }
     catch (e) { alert(e.message); }
   }
+  async function submitProposal() {
+    const patch = {};
+    FIELDS.forEach(({ k }) => { if (String(form[k]) !== String(E[k])) patch[k] = form[k]; });
+    if (Object.keys(patch).length === 0) { alert('Keine Änderung gegenüber den aktuellen Daten.'); return; }
+    setSaving(true);
+    try { setProject(await api.proposeData(project.id, patch, note || null)); setOpen(false); setNote(''); }
+    catch (e) { alert(e.message); }
+    finally { setSaving(false); }
+  }
 
   return (
     <div className="space-y-6">
@@ -55,7 +66,7 @@ export default function Building() {
         eyebrow="Gebäude & Anlage"
         title="Anlagendaten"
         sub="Grundlage aller Berechnungen. Solange keine Feindaten vorliegen, rechnet das System mit belastbaren Durchschnittswerten."
-        actions={canEdit && <button onClick={startEdit} className="btn-ghost btn-sm"><Pencil className="h-4 w-4" /> Bearbeiten</button>}
+        actions={<button onClick={startEdit} className="btn-ghost btn-sm"><Pencil className="h-4 w-4" /> {canEdit ? 'Bearbeiten' : 'Änderung vorschlagen'}</button>}
       />
 
       {/* Adresse + Datenstand */}
@@ -82,7 +93,7 @@ export default function Building() {
               : <><CircleDashed className="h-4 w-4 text-sun-deep" /> <span className="font-medium">Erste Schätzung</span></>}
           </div>
           <p className="text-2xs text-ink-faint mt-1">
-            {project.feindaten ? 'Belastbare Grundlage für Verhandlung und Verträge.' : 'Durchschnittswerte – mit echtem Angebot präzisierbar.'}
+            {project.feindaten ? 'Belastbare Grundlage für Verhandlung und Empfehlung.' : 'Durchschnittswerte – mit echtem Angebot präzisierbar.'}
           </p>
           {canEdit && (
             <button onClick={toggleFeindaten} className="btn-quiet btn-sm mt-2 !px-2 -ml-1">
@@ -107,9 +118,16 @@ export default function Building() {
         </dl>
       </div>
 
-      {!canEdit && <InfoNote>Nur Admin oder Eigentümerseite können die Anlagendaten ändern. Deine Haushaltsdaten pflegst du unter <Link to="../gemeinschaft" className="link">Hausgemeinschaft</Link>.</InfoNote>}
+      {!canEdit && (
+        <InfoNote tone={myPendingData ? 'sun' : 'info'}>
+          {myPendingData
+            ? 'Dein Änderungsvorschlag wartet auf Freigabe durch die Projektleitung.'
+            : <>Du kannst Änderungen an den Anlagendaten <strong>vorschlagen</strong> – die Projektleitung gibt sie frei. Deine Haushaltsdaten pflegst du unter <Link to="../gemeinschaft" className="link">Hausgemeinschaft</Link>.</>}
+        </InfoNote>
+      )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Anlagendaten bearbeiten" width="max-w-xl">
+      <Modal open={open} onClose={() => setOpen(false)} title={canEdit ? 'Anlagendaten bearbeiten' : 'Änderung der Anlagendaten vorschlagen'} width="max-w-xl">
+        {!canEdit && <p className="text-[13px] text-ink-soft mb-3">Passe die Werte an, die dir auffallen. Dein Vorschlag geht an die Projektleitung und wird erst nach Freigabe für alle übernommen.</p>}
         <div className="grid sm:grid-cols-2 gap-4">
           {FIELDS.map(({ k, label, unit, step }) => (
             <Field key={k} label={`${label} (${unit})`}>
@@ -118,9 +136,10 @@ export default function Building() {
             </Field>
           ))}
         </div>
+        {!canEdit && <textarea className="input mt-3" rows={2} placeholder="Begründung (optional)" value={note} onChange={(e) => setNote(e.target.value)} />}
         <div className="flex justify-end gap-2 mt-5">
           <button onClick={() => setOpen(false)} className="btn-ghost btn-sm">Abbrechen</button>
-          <button onClick={save} disabled={saving} className="btn-primary btn-sm">{saving ? 'Speichert …' : 'Speichern'}</button>
+          <button onClick={canEdit ? save : submitProposal} disabled={saving} className="btn-primary btn-sm">{saving ? (canEdit ? 'Speichert …' : 'Wird gesendet …') : (canEdit ? 'Speichern' : 'Vorschlag einreichen')}</button>
         </div>
       </Modal>
     </div>

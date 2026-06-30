@@ -10,7 +10,8 @@ import { Users, Copy, Check, UserPlus, Home, Mail, Zap, TrendingUp, MinusCircle 
 
 const ROLE = {
   admin: { label: 'Admin', cls: 'chip-grass' },
-  mieter: { label: 'Mieter:in', cls: 'chip-muted' },
+  mieter: { label: 'Mieter', cls: 'chip-muted' },
+  selbstnutzer: { label: 'Eigentümer · wohnt hier', cls: 'chip-sun' },
   vermieter: { label: 'Eigentümerseite', cls: 'chip-sun' },
 };
 const origin = () => (typeof window !== 'undefined' ? window.location.origin : '');
@@ -107,7 +108,7 @@ export default function Community() {
 
       {/* Einladungen */}
       {isAdmin ? <Invites project={project} setProject={setProject} />
-        : <InfoNote>Nur der/die Admin kann Einladungslinks erstellen. Teile den erhaltenen Link gern weiter, damit mehr Wohnungen mitmachen.</InfoNote>}
+        : <InfoNote>Nur der Admin kann Einladungslinks erstellen. Teile den erhaltenen Link gern weiter, damit mehr Wohnungen mitmachen.</InfoNote>}
     </div>
   );
 }
@@ -189,6 +190,7 @@ function Invites({ project, setProject }) {
   const invites = project.invites || [];
   const tenantLinks = invites.filter((i) => i.role === 'mieter');
   const ownerLinks = invites.filter((i) => i.role === 'vermieter');
+  const ownerOccupierLinks = invites.filter((i) => i.role === 'selbstnutzer');
   const [busy, setBusy] = useState('');
 
   async function create(role) {
@@ -198,11 +200,16 @@ function Invites({ project, setProject }) {
   }
 
   return (
-    <section className="grid md:grid-cols-2 gap-4">
+    <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
       <InviteCol
-        icon={<UserPlus className="h-4 w-4 text-grass-deep" />} title="Nachbar:innen einladen"
+        icon={<UserPlus className="h-4 w-4 text-grass-deep" />} title="Nachbarn einladen"
         desc="Ein Link für alle Mietparteien – beliebig oft teilbar." links={tenantLinks}
         onCreate={() => create('mieter')} busy={busy === 'mieter'} cta="Mieter-Link erstellen"
+      />
+      <InviteCol
+        icon={<Home className="h-4 w-4 text-sun-deep" />} title="Selbstnutzende Eigentümer"
+        desc="Für Eigentümer, die selbst im Haus wohnen – zählen als Verbraucher mit." links={ownerOccupierLinks}
+        onCreate={() => create('selbstnutzer')} busy={busy === 'selbstnutzer'} cta="Selbstnutzer-Link erstellen" sun
       />
       <InviteCol
         icon={<Mail className="h-4 w-4 text-sun-deep" />} title="Eigentümerseite einladen"

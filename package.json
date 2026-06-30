@@ -1,6 +1,6 @@
 {
   "name": "energieflow",
-  "version": "4.1.0",
+  "version": "4.6.0",
   "private": true,
   "type": "module",
   "description": "EnergieFlow / SolarGemeinschaft – Plattform für gemeinschaftliche Gebäudeversorgung (GGV). Cloudflare Pages: statisches React-Frontend + API als Pages Functions (onRequest), Persistenz auf KV.",

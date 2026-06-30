@@ -80,7 +80,7 @@ export function scenario(E, { quotePct, sharePct, consumptionFactor = 1 }) {
   const kosten = (E.opex || 0) + (E.versicherung || 0);
   const netto = einnSolar + einnFeed - kosten;       // €/a Nettoüberschuss (Vermieter)
 
-  const tenantSavingsTotal = solar * (E.gvpreis - solarpreis) / 100; // €/a Ersparnis aller Mieter:innen
+  const tenantSavingsTotal = solar * (E.gvpreis - solarpreis) / 100; // €/a Ersparnis aller Mieter
   return {
     teil, erz, evje, solar, feed, solarpreis,
     einnSolar, einnFeed, kosten, netto,
@@ -94,11 +94,11 @@ export function scenario(E, { quotePct, sharePct, consumptionFactor = 1 }) {
   };
 }
 
-// IRR-Kurve über den Preisanteil – für die Hebel-Visualisierung
-export function irrCurve(E, quotePct, from = 60, to = 100, step = 2, consumptionFactor = 1) {
+// IRR-Kurve über den Preisanteil – für die Hebel-Visualisierung (modell-fähig)
+export function irrCurve(E, quotePct, from = 60, to = 100, step = 2, consumptionFactor = 1, model = 'ggv') {
   const pts = [];
   for (let s = from; s <= to + 1e-6; s += step) {
-    const r = scenario(E, { quotePct, sharePct: +s.toFixed(1), consumptionFactor }).irr;
+    const r = modelScenario(E, { quotePct, sharePct: +s.toFixed(1), consumptionFactor }, model).irr;
     pts.push({ share: +s.toFixed(1), irr: r == null ? null : +(r * 100).toFixed(2) });
   }
   return pts;
@@ -140,4 +140,53 @@ export function selfPerHousehold(E, consumptionKwh) {
   const c = consumptionKwh || CONS_REF;
   const evjeBase = 1582.5 * ((+E.kwp || 30) / (+E.we || 8)) / (30 / 8);
   return Math.min(evjeBase * (c / CONS_REF), c);
+}
+
+// ===========================================================================
+//  Mieterstrom-Modell (Dual-Ausbau) — zusätzlich zur GGV.
+//
+//  Physik identisch zur GGV (gleiche Anlage, gleicher Direktverbrauch). Der
+//  Unterschied liegt in den Erlösen: Beim Mieterstrom ist der Betreiber
+//  Vollversorger und erhält zusätzlich (a) den Mieterstromzuschlag auf den
+//  direkt gelieferten PV-Strom und (b) eine Nettomarge aus der Reststrom-
+//  Vollversorgung (inkl. Grundgebühr), abzüglich Netzstromeinkauf.
+//
+//  Kalibrierung an der Ariadne-Basisvariante (Tabelle 9, 30 kWp / 8 WE):
+//   • Mieterstromzuschlag 230,73 € / 10.989 kWh direkt ≈ 2,1 ct/kWh
+//   • Reststrom-Nettomarge (Weiterverkauf + Grundgebühr − Einkauf − Grundgebühr):
+//     1.734,08 + 900 − 1.871,70 − 150 = 612,38 € / 8 WE ≈ 76,5 €/teiln. Haushalt p. a.
+//  Damit reproduziert das Modell bei Ariadne-Eingaben den dortigen
+//  Mieterstrom-Überschuss (4.438 €) und internen Zinsfuß (3,6 %).
+//  Hinweis: Der Mieterstromzuschlag ist anlagengrößenabhängig gestaffelt; 2,1 ct
+//  ist der an der Basisvariante kalibrierte Wert.
+// ===========================================================================
+export const MS_ZUSCHLAG_CT = 2.1;       // ct/kWh auf direkt gelieferten PV-Strom
+export const MS_RESTSTROM_MARGE_HH = 76.5; // €/a Nettomarge je teilnehmendem Haushalt
+
+export function scenarioMieterstrom(E, opts) {
+  const g = scenario(E, opts);                         // gleiche PV-Physik wie GGV
+  const zuschlag = g.solar * MS_ZUSCHLAG_CT / 100;     // €/a Mieterstromzuschlag
+  const reststrom = g.teil * MS_RESTSTROM_MARGE_HH;    // €/a Nettomarge Vollversorgung
+  const netto = g.netto + zuschlag + reststrom;
+  return {
+    ...g,
+    model: 'mieterstrom',
+    zuschlag, reststrom,
+    netto,
+    irr: irr(E.invest, netto, E.zeitraum),
+    amort: netto > 0 ? E.invest / netto : null,
+  };
+}
+
+// Beide Modelle für dieselbe Anlage/dasselbe Szenario nebeneinander.
+export function compareModels(E, opts) {
+  return {
+    ggv: { ...scenario(E, opts), model: 'ggv' },
+    mieterstrom: scenarioMieterstrom(E, opts),
+  };
+}
+
+// Einzelnes Szenario je nach gewähltem Modell.
+export function modelScenario(E, opts, model = 'ggv') {
+  return model === 'mieterstrom' ? scenarioMieterstrom(E, opts) : { ...scenario(E, opts), model: 'ggv' };
 }

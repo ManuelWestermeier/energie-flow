@@ -7,7 +7,7 @@ export default function HowItWorks() {
   return (
     <div className="wrap py-12 max-w-3xl">
       <PageHead eyebrow="Ablauf" title="So funktioniert's"
-        sub="EnergieFlow begleitet euch in sechs Phasen von der ersten Idee bis zur fertigen Anlage. Der Arbeitsbereich erkennt erledigte Schritte automatisch und hält die passenden Unterlagen bereit." />
+        sub="EnergieFlow begleitet euch Schritt für Schritt – von der ersten Idee bis zur fundierten Empfehlung, welches Modell sich für euer Haus lohnt. Der Arbeitsbereich erkennt erledigte Schritte automatisch und hält die passenden Anschreiben bereit." />
 
       <div className="relative mt-8">
         <div className="absolute left-4 top-3 bottom-3 w-0.5 rounded-full current-charge" style={{ background: 'var(--flow-v)' }} aria-hidden />
@@ -33,8 +33,8 @@ export default function HowItWorks() {
 
       <div className="card p-5 mt-8 bg-paper-2">
         <h3>Was EnergieFlow für euch übernimmt</h3>
-        <p className="text-[14px] text-ink-soft mt-2">Ehrliche Wirtschaftlichkeit auf Knopfdruck, Anschreiben an Nachbarschaft und
-        Eigentümerseite, eine faire Verhandlung mit klarer Zustimmung und am Ende die GGV-Verträge je Wohnung – alles aus euren Projektdaten.</p>
+        <p className="text-[14px] text-ink-soft mt-2">Ehrliche Wirtschaftlichkeit für beide Modelle auf Knopfdruck, Anschreiben an Nachbarschaft und
+        Eigentümerseite, eine faire Verhandlung mit klarer Zustimmung und am Ende eine begründete Empfehlung, welches Modell passt – alles aus euren Projektdaten.</p>
       </div>
 
       <div className="flex flex-wrap gap-3 mt-8">

@@ -6,7 +6,7 @@ import { Menu, X, LogOut, ArrowRight, LayoutGrid } from 'lucide-react';
 
 const PUBLIC_NAV = [
   { to: '/so-funktioniert-es', label: 'So funktioniert\u2019s' },
-  { to: '/modell', label: 'Das GGV-Modell' },
+  { to: '/modell', label: 'Die Modelle' },
   { to: '/wirtschaftlichkeit', label: 'Wirtschaftlichkeit' },
   { to: '/faq', label: 'FAQ' },
 ];
@@ -75,16 +75,16 @@ function SiteFooter() {
         <div className="sm:col-span-2 lg:col-span-1">
           <LogoWide className="h-9" />
           <p className="text-[13px] text-ink-soft mt-3 max-w-xs">
-            Gemeinsam Solarstrom aufs Mietshaus bringen – per gemeinschaftlicher
-            Gebäudeversorgung (GGV) nach §42b EnWG.
+            Gemeinsam Solarstrom aufs Mietshaus bringen – mit dem passenden Modell:
+            gemeinschaftliche Gebäudeversorgung (§42b) oder Mieterstrom (§42a).
           </p>
         </div>
         <FootCol title="Loslegen" links={[['Schnellrechner', '/rechner'], ['So funktioniert\u2019s', '/so-funktioniert-es'], ['Anmelden', '/login']]} />
-        <FootCol title="Wissen" links={[['Das GGV-Modell', '/modell'], ['Wirtschaftlichkeit', '/wirtschaftlichkeit'], ['Häufige Fragen', '/faq']]} />
+        <FootCol title="Wissen" links={[['Die Modelle', '/modell'], ['Wirtschaftlichkeit', '/wirtschaftlichkeit'], ['Häufige Fragen', '/faq']]} />
         <div>
           <div className="eyebrow mb-3">Hinweis</div>
           <p className="text-[12.5px] text-ink-faint leading-relaxed">
-            Alle Berechnungen sind Schätzungen; erzeugte Schreiben und Verträge sind Entwürfe und
+            Alle Berechnungen sind Schätzungen; erzeugte Anschreiben sind Entwürfe und
             ersetzen keine Rechts- oder Steuerberatung.
           </p>
           <p className="text-[12.5px] text-ink-faint mt-3">Projekt für YES! Young Economic Solutions 2026.</p>

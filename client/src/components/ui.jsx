@@ -24,7 +24,12 @@ export function PageHead({ eyebrow, title, sub, actions }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
       <div className="min-w-0">
-        {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+        {eyebrow && (
+          <div className="flex items-center gap-2">
+            <span className="h-0.5 w-5 rounded-full" style={{ background: 'var(--flow)' }} aria-hidden />
+            <Eyebrow>{eyebrow}</Eyebrow>
+          </div>
+        )}
         <h1 className="mt-1">{title}</h1>
         {sub && <p className="text-ink-soft mt-1.5 max-w-prose2 text-[14.5px]">{sub}</p>}
       </div>
@@ -91,7 +96,7 @@ export function Donut({ value = 0, size = 64, stroke = 7, label }) {
 const initials = (n = '?') => n.trim().split(/\s+/).map((x) => x[0]).slice(0, 2).join('').toUpperCase();
 export function Avatar({ name, size = 36 }) {
   return (
-    <span className="rounded-full bg-grass-soft text-grass-deep grid place-items-center font-semibold shrink-0"
+    <span className="rounded-full bg-grass-soft text-grass-deep grid place-items-center font-semibold shrink-0 ring-1 ring-grass/15"
       style={{ width: size, height: size, fontSize: size * 0.36 }}>
       {initials(name)}
     </span>
@@ -128,7 +133,7 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg' }) {
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-ink/30 backdrop-blur-[2px]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-ink/40 backdrop-blur-[3px]" onClick={onClose}>
       <div className={`card shadow-pop w-full ${width} max-h-[90vh] overflow-auto`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line sticky top-0 bg-paper">
           <h3 className="text-[15px] font-semibold">{title}</h3>
@@ -151,6 +156,10 @@ export function EmptyState({ icon, title, children }) {
 }
 
 export function InfoNote({ children, tone = 'info' }) {
-  const map = { info: 'bg-info-soft text-info', grass: 'bg-grass-soft text-grass-ink', sun: 'bg-sun-soft text-sun-ink' };
-  return <div className={`rounded-card p-3.5 text-[13px] ${map[tone] || map.info}`}>{children}</div>;
+  const map = {
+    info: 'bg-info-soft text-info border-info',
+    grass: 'bg-grass-soft text-grass-ink border-grass',
+    sun: 'bg-sun-soft text-sun-ink border-sun',
+  };
+  return <div className={`rounded-card border-l-[3px] p-3.5 pl-4 text-[13px] ${map[tone] || map.info}`}>{children}</div>;
 }

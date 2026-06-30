@@ -26,7 +26,8 @@ export default {
       },
       borderRadius: { card: '14px', 'card-lg': '20px', pill: '999px' },
       boxShadow: {
-        card: '0 1px 2px rgba(20,30,15,.05), 0 1px 0 rgba(20,30,15,.02)',
+        card: '0 1px 2px rgba(20,30,15,.04), 0 6px 16px -10px rgba(20,30,15,.12)',
+        'card-hover': '0 2px 6px rgba(20,30,15,.05), 0 18px 36px -18px rgba(20,40,15,.20)',
         raise: '0 10px 30px -14px rgba(20,40,15,.30)',
         pop: '0 24px 60px -22px rgba(20,40,15,.38)',
         glow: '0 14px 50px -14px rgba(120,160,40,.45)',

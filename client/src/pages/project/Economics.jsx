@@ -4,7 +4,7 @@ import { useProject } from '../../context/ProjectContext.jsx';
 import { PageHead, Stat, InfoNote } from '../../components/ui.jsx';
 import LeverChart from '../../components/LeverChart.jsx';
 import ModelRecommendation from '../../components/ModelRecommendation.jsx';
-import { paramsFromProject, committedQuote, scenario, consumptionStats, CONS_REF } from '../../lib/economics.js';
+import { paramsFromProject, committedQuote, modelScenario, consumptionStats, CONS_REF } from '../../lib/economics.js';
 import { de, eur, ct, kwh, pct } from '../../lib/format.js';
 import { BarChart3, Info, Database, RotateCcw } from 'lucide-react';
 
@@ -21,9 +21,10 @@ export default function Economics() {
   const [share, setShare] = useState(project.share_pct || 90);
   const [cons, setCons] = useState(cs.avg);
   const [metric, setMetric] = useState('irr'); // 'irr' | 'save'
+  const [model, setModel] = useState('ggv');    // 'ggv' | 'mieterstrom'
 
   const cf = (cons || CONS_REF) / CONS_REF;
-  const r = useMemo(() => scenario(E, { quotePct: quote, sharePct: share, consumptionFactor: cf }), [E, quote, share, cf]);
+  const r = useMemo(() => modelScenario(E, { quotePct: quote, sharePct: share, consumptionFactor: cf }, model), [E, quote, share, cf, model]);
   const live = quote === baseQuote && cons === cs.avg && share === (project.share_pct || 90);
   const resetLive = () => { setQuote(baseQuote); setShare(project.share_pct || 90); setCons(cs.avg); };
 
@@ -34,11 +35,19 @@ export default function Economics() {
 
       {!project.feindaten && <InfoNote>Basis ist eine <strong>Schätzung</strong>. Mit Feindaten unter <Link to="../gebaeude" className="link">Gebäude & Anlage</Link> werden die Werte gebäudegenau.</InfoNote>}
 
-      {/* Modellempfehlung (beratend) – GGV bleibt operativ das Rückgrat */}
-      <ModelRecommendation we={project.we} />
+      {/* Modellvergleich & Empfehlung (neutral) */}
+      <ModelRecommendation E={E} quote={quote} share={share} cf={cf} />
 
       {/* Stellschrauben */}
       <div className="card p-5">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <span className="text-[13px] font-semibold text-ink">Modell:</span>
+          <div className="flex rounded-pill border border-line p-0.5 text-2xs">
+            <button onClick={() => setModel('ggv')} className={`px-3 py-1 rounded-pill font-semibold ${model === 'ggv' ? 'bg-grass-soft text-grass-deep' : 'text-ink-soft'}`}>GGV</button>
+            <button onClick={() => setModel('mieterstrom')} className={`px-3 py-1 rounded-pill font-semibold ${model === 'mieterstrom' ? 'bg-sun-soft text-sun-deep' : 'text-ink-soft'}`}>Mieterstrom</button>
+          </div>
+          <span className="text-2xs text-ink-faint">Die folgenden Zahlen gelten für das gewählte Modell.</span>
+        </div>
         <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
           <div className="flex items-start gap-2 text-[13px] text-ink-soft">
             <Database className="h-4 w-4 text-grass-deep mt-0.5 shrink-0" />
@@ -73,7 +82,7 @@ export default function Economics() {
       <section className="card p-5">
         <div className="flex items-center gap-2 mb-1"><BarChart3 className="h-4 w-4 text-grass-deep" /><h3>Der Preis-Hebel</h3></div>
         <p className="text-[13px] text-ink-soft mb-3">Wie sich die Rendite der Eigentümerseite mit dem Preis verändert – bei eurer Beteiligung und bei voller Beteiligung.</p>
-        <LeverChart E={E} quote={quote} consumptionFactor={cf} height={240} />
+        <LeverChart E={E} quote={quote} consumptionFactor={cf} height={240} model={model} />
       </section>
 
       {/* Sensitivitätsmatrix */}
@@ -96,7 +105,7 @@ export default function Economics() {
                 <tr key={q}>
                   <td className="font-semibold tnum">{q}%</td>
                   {SHARES.map((s) => {
-                    const sc = scenario(E, { quotePct: q, sharePct: s, consumptionFactor: cf });
+                    const sc = modelScenario(E, { quotePct: q, sharePct: s, consumptionFactor: cf }, model);
                     const sel = q === quote && s === share;
                     const val = metric === 'irr'
                       ? (sc.irr == null ? '–' : pct(sc.irr * 100, 1))
@@ -127,15 +136,18 @@ export default function Economics() {
         <Breakdown title="Wirtschaft (pro Jahr)" rows={[
           ['Erlös Direktlieferung', eur(r.einnSolar)],
           ['Erlös Einspeisung', eur(r.einnFeed)],
+          ...(model === 'mieterstrom'
+            ? [['Mieterstromzuschlag', eur(r.zuschlag)], ['Marge Reststrom-Vollversorgung', eur(r.reststrom)]]
+            : []),
           ['Betrieb & Versicherung', '− ' + eur(r.kosten)],
           ['Nettoüberschuss Eigentümer', eur(r.netto)],
-          ['Ersparnis aller Mieter:innen', eur(r.tenantSavingsTotal)],
-        ]} highlight={[3, 4]} />
+          ['Ersparnis aller Mieter', eur(r.tenantSavingsTotal)],
+        ]} highlight={model === 'mieterstrom' ? [5, 6] : [3, 4]} />
       </div>
 
-      <InfoNote tone="sun">
-        Ehrliche Einordnung: Die Rendite liegt im Referenzfall niedrig – das Modell lebt vom gemeinsamen Nutzen, nicht von hoher Verzinsung.
-        Auch <strong>Balkonkraftwerke</strong> sind eine einfache Alternative für Einzelne. Mehr dazu im <Link to="/wirtschaftlichkeit" className="link">Wirtschaftlichkeits-Erklärbereich</Link>.
+      <InfoNote tone="info">
+        Beide Modelle leben vor allem vom gemeinsamen Nutzen vor Ort, weniger von hoher Verzinsung.
+        Auch <strong>Balkonkraftwerke</strong> sind eine einfache Alternative für Einzelne. Mehr dazu im <Link to="/wirtschaftlichkeit" className="link">Erklärbereich</Link>.
       </InfoNote>
     </div>
   );

@@ -1,6 +1,6 @@
 // ===========================================================================
 //  phases.js – Der Projekt-Fahrplan (Signature-Element „Flussschiene")
-//  Sechs Phasen von der Initiative bis zur Umsetzung. Aufgaben sind entweder
+//  Sechs Phasen von der Initiative bis zur Modell-Empfehlung. Aufgaben sind entweder
 //  „auto" (werden aus dem Projektzustand erkannt) oder manuell (Häkchen, das
 //  serverseitig gespeichert wird).
 // ===========================================================================
@@ -21,9 +21,9 @@ export const PHASES = [
   },
   {
     id: 'community', n: 2, title: 'Hausgemeinschaft bilden', to: 'gemeinschaft',
-    summary: 'Nachbar:innen gewinnen – je mehr mitmachen, desto stärker die Position.',
+    summary: 'Nachbarn gewinnen – je mehr mitmachen, desto stärker die Position.',
     tasks: [
-      { id: 'invited', label: 'Nachbar:innen eingeladen', auto: (p) => hasInvite(p, 'mieter'), to: 'gemeinschaft' },
+      { id: 'invited', label: 'Nachbarn eingeladen', auto: (p) => hasInvite(p, 'mieter'), to: 'gemeinschaft' },
       { id: 'quote50', label: 'Mindestens 50 % der Wohnungen sagen zu', auto: (p) => committedQuote(p) >= 50, to: 'gemeinschaft' },
       { id: 'confirmed', label: 'Haushaltsdaten gesammelt', auto: (p) => { const c = consumptionStats(p); return c.tenants > 0 && c.reported >= Math.ceil(c.tenants * 0.5); }, to: 'gemeinschaft', hint: 'Verbrauchswerte machen die Analyse gebäudegenau.' },
     ],
@@ -32,9 +32,9 @@ export const PHASES = [
     id: 'owner', n: 3, title: 'Eigentümerseite gewinnen', to: 'gemeinschaft',
     summary: 'Die Eigentümerseite mit einem fertigen, fairen Vorschlag ansprechen.',
     tasks: [
-      { id: 'ownerinvited', label: 'Eigentümer:in eingeladen', auto: (p) => hasInvite(p, 'vermieter'), to: 'gemeinschaft' },
+      { id: 'ownerinvited', label: 'Eigentümer eingeladen', auto: (p) => hasInvite(p, 'vermieter'), to: 'gemeinschaft' },
       { id: 'letter', label: 'Anschreiben an Eigentümerseite erstellt', to: 'dokumente', hint: 'Wird unter „Dokumente“ als Word-Datei erzeugt.' },
-      { id: 'ownerjoined', label: 'Eigentümer:in beigetreten', auto: (p) => hasMember(p, 'vermieter'), to: 'gemeinschaft' },
+      { id: 'ownerjoined', label: 'Eigentümer beigetreten', auto: (p) => hasMember(p, 'vermieter'), to: 'gemeinschaft' },
     ],
   },
   {
@@ -49,16 +49,17 @@ export const PHASES = [
     id: 'negotiation', n: 5, title: 'Verhandeln & einigen', to: 'verhandlung',
     summary: 'Einen Preis finden, der für beide Seiten trägt – und ihn bestätigen.',
     tasks: [
-      { id: 'proposed', label: 'Preis verhandelt', auto: (p) => (p.proposals || []).length > 0, to: 'verhandlung' },
+      { id: 'proposed', label: 'Preis verhandelt', auto: (p) => (p.proposals || []).some((pr) => (pr.kind || 'price') === 'price' && (pr.status || 'approved') === 'approved'), to: 'verhandlung' },
       { id: 'consensus', label: 'Alle Aktiven stimmen dem Preis zu', auto: (p) => !!(p.consent && p.consent.consensus), to: 'verhandlung' },
     ],
   },
   {
-    id: 'contracts', n: 6, title: 'Verträge & Umsetzung', to: 'dokumente',
-    summary: 'GGV-Verträge erzeugen und die Anlage auf den Weg bringen.',
+    id: 'recommendation', n: 6, title: 'Modell empfehlen & entscheiden', to: 'wirtschaftlichkeit',
+    summary: 'Beide Modelle vergleichen, die Empfehlung als Unterlage erzeugen und gemeinsam entscheiden.',
     tasks: [
-      { id: 'contracts', label: 'GGV-Verträge erstellt', to: 'dokumente', hint: 'Nach der Einigung unter „Dokumente“ verfügbar.' },
-      { id: 'ordered', label: 'Anlage beauftragt / Umsetzung gestartet', hint: 'Wenn die Installation beauftragt ist.' },
+      { id: 'compared', label: 'Beide Modelle (GGV & Mieterstrom) verglichen', to: 'wirtschaftlichkeit', hint: 'Der Modellvergleich auf der Seite „Wirtschaftlichkeit“.' },
+      { id: 'analysis', label: 'Wirtschaftlichkeitsanalyse als Unterlage erzeugt', to: 'dokumente', hint: 'Unter „Dokumente“ als Word-Datei für die Eigentümerseite.' },
+      { id: 'decided', label: 'Modellentscheidung getroffen', hint: 'Die Eigentümerseite wählt GGV oder Mieterstrom.' },
     ],
   },
 ];

@@ -11,7 +11,7 @@ export default function EconomicsExplainer() {
   return (
     <div className="wrap py-12 max-w-3xl">
       <PageHead eyebrow="Wirtschaftlichkeit" title="Wie wir rechnen"
-        sub="Transparent und ohne Schönrechnerei. Grundlage ist das Ariadne-Referenzmodell (Fischer/Henger, IW Köln, 2025) für eine 30-kWp-Anlage auf einem Haus mit acht Wohneinheiten." />
+        sub="Transparent und ohne Schönrechnerei. Wir rechnen beide Modelle – GGV und Mieterstrom – auf Basis des Ariadne-Referenzmodells (Fischer/Henger, IW Köln, 2025), hier am Beispiel einer 30-kWp-Anlage auf einem Haus mit acht Wohneinheiten." />
 
       <section className="mt-8">
         <h2 className="mb-3">Zwei Stellschrauben bestimmen alles</h2>
@@ -19,7 +19,7 @@ export default function EconomicsExplainer() {
           <div className="card p-5">
             <span className="h-10 w-10 rounded-card bg-grass-soft text-grass-deep grid place-items-center"><Users className="h-5 w-5" /></span>
             <h3 className="mt-3">Beteiligung</h3>
-            <p className="text-[13.5px] text-ink-soft mt-1">Wie viele Wohnungen mitmachen. Mehr Teilnehmende heißt mehr direkt genutzter Solarstrom – und damit bessere Wirtschaftlichkeit für alle.</p>
+            <p className="text-[13.5px] text-ink-soft mt-1">Wie viele Wohnungen mitmachen. Mehr Teilnehmer heißt mehr direkt genutzter Solarstrom – und damit bessere Wirtschaftlichkeit für alle.</p>
           </div>
           <div className="card p-5">
             <span className="h-10 w-10 rounded-card bg-sun-soft text-sun-deep grid place-items-center"><Tag className="h-5 w-5" /></span>
@@ -30,8 +30,8 @@ export default function EconomicsExplainer() {
       </section>
 
       <section className="mt-10">
-        <h2 className="mb-1">Ein Rechenbeispiel</h2>
-        <p className="text-[14px] text-ink-soft mb-4">Referenzanlage, alle acht Wohnungen machen mit, Preis 90 % des Grundpreises:</p>
+        <h2 className="mb-1">Ein Rechenbeispiel (GGV-Variante)</h2>
+        <p className="text-[14px] text-ink-soft mb-4">Referenzanlage, alle acht Wohnungen machen mit, Preis 90 % des Grundpreises. Beim Mieterstrom kämen Mieterstromzuschlag und Reststrommarge hinzu – die Unterschiede erklärt die <Link to="/modell" className="link">Modell-Seite</Link>:</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Stat label="Solarstrompreis" tone="grass" value={ct(r.solarpreis)} sub="je kWh" />
           <Stat label="Ersparnis je HH" tone="grass" value={eur(r.tenantSavingsPerHH)} sub="pro Jahr" />
@@ -52,8 +52,8 @@ export default function EconomicsExplainer() {
       <section className="mt-10">
         <h2 className="mb-3">Was wir offen ansprechen</h2>
         <div className="space-y-3">
-          <Honest title="Die Rendite ist niedrig">Im Referenzfall amortisiert sich die Anlage langsam. Als reine Geldanlage ist sie wenig attraktiv – der Wert liegt im gemeinsamen Nutzen und günstigeren Strom.</Honest>
-          <Honest title="Balkonkraftwerke sind eine echte Alternative">Für einzelne Haushalte sind sie günstig und unkompliziert (§554 BGB). Die GGV lohnt sich vor allem, wenn viele mitziehen und das ganze Dach genutzt wird.</Honest>
+          <Honest title="Die Rendite ist niedrig">Im Referenzfall amortisiert sich die Anlage langsam – bei beiden Modellen, beim Mieterstrom etwas schneller als bei der GGV. Als reine Geldanlage bleibt sie wenig attraktiv; der Wert liegt im gemeinsamen Nutzen und günstigeren Strom.</Honest>
+          <Honest title="Balkonkraftwerke sind eine echte Alternative">Für einzelne Haushalte sind sie günstig und unkompliziert (§554 BGB). Die gemeinsame Dachnutzung lohnt sich vor allem, wenn viele mitziehen und das ganze Dach genutzt wird.</Honest>
           <Honest title="Annahmen statt Versprechen">Erträge, Preise und Verbräuche schwanken real. Solange keine Feindaten vorliegen, rechnen wir mit belastbaren Durchschnitten – kenntlich gemacht als „Schätzung“.</Honest>
         </div>
         <InfoNote tone="sun"><AlertTriangle className="inline h-4 w-4 mr-1" /> Keine Renditeberatung: Die Zahlen sind Modellrechnungen zur Orientierung, keine Anlage- oder Steuerberatung.</InfoNote>

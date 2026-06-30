@@ -21,12 +21,14 @@
   body {
     @apply bg-canvas text-ink antialiased;
     font-family: 'Public Sans', system-ui, sans-serif;
+    text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4 { @apply font-display text-ink; letter-spacing: -0.02em; text-wrap: balance; }
   h1 { @apply text-3xl sm:text-[2.4rem] font-bold; letter-spacing: -0.03em; line-height: 1.05; }
   h2 { @apply text-xl sm:text-2xl font-bold; letter-spacing: -0.025em; }
   h3 { @apply text-base font-semibold; }
   a { @apply text-ink; }
+  p { text-wrap: pretty; }
   :focus-visible { outline: 2px solid #3f8f2c; outline-offset: 2px; border-radius: 5px; }
   ::selection { background: #d6ecc6; color: #1d3b16; }
 }
@@ -85,8 +87,8 @@
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-[11px] font-semibold
           transition active:translate-y-px disabled:opacity-50 disabled:pointer-events-none
           text-[14px] px-4 py-2.5; }
-  .btn-primary { @apply btn bg-grass text-white hover:bg-grass-deep shadow-[0_2px_10px_-3px_rgba(44,107,34,.5)]; }
-  .btn-sun { @apply btn bg-sun text-white hover:bg-sun-deep shadow-[0_2px_10px_-3px_rgba(185,104,16,.5)]; }
+  .btn-primary { @apply btn bg-grass text-white hover:bg-grass-deep hover:-translate-y-px shadow-[0_2px_10px_-3px_rgba(44,107,34,.5)] hover:shadow-[0_10px_24px_-10px_rgba(44,107,34,.55)]; }
+  .btn-sun { @apply btn bg-sun text-white hover:bg-sun-deep hover:-translate-y-px shadow-[0_2px_10px_-3px_rgba(185,104,16,.5)] hover:shadow-[0_10px_24px_-10px_rgba(185,104,16,.55)]; }
   .btn-dark { @apply btn bg-ink text-white hover:bg-night; }
   .btn-ghost { @apply btn bg-paper border border-line text-ink hover:border-line-strong hover:bg-paper-2; }
   .btn-quiet { @apply btn text-ink-soft hover:text-ink hover:bg-paper-2; }
@@ -95,8 +97,8 @@
 
   /* Formular */
   .label { @apply block text-[12.5px] font-medium text-ink-soft mb-1; }
-  .input { @apply w-full rounded-[10px] border border-line bg-paper px-3 py-2.5 text-[14px] text-ink
-           placeholder:text-ink-faint focus:border-grass focus:outline-none focus:ring-2 focus:ring-grass/15; }
+  .input { @apply w-full rounded-[10px] border border-line bg-paper px-3 py-2.5 text-[14px] text-ink transition-colors
+           placeholder:text-ink-faint focus:border-grass focus:outline-none focus:ring-2 focus:ring-grass/20; }
   textarea.input { @apply leading-relaxed; }
 
   /* Chips / Status */

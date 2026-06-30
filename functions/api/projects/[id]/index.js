@@ -10,7 +10,7 @@ export async function onRequest({ request, env, params }) {
   const m = getMember(db, id, user.id);
   if (!m) return err('Kein Zugriff auf dieses Projekt.', 403);
 
-  if (request.method === 'GET') return json(fullProject(db, id));
+  if (request.method === 'GET') return json(fullProject(db, id, { userId: user.id, role: m.role }));
 
   if (request.method === 'PATCH') {
     if (!['admin', 'vermieter'].includes(m.role))
@@ -24,7 +24,7 @@ export async function onRequest({ request, env, params }) {
     if ('name' in patch) logActivity(db, id, { type: 'edit', actorName: user.name, text: 'hat das Projekt umbenannt' });
     else logActivity(db, id, { type: 'edit', actorName: user.name, text: body.feindaten ? 'hat Feindaten hinterlegt' : 'hat die Anlagendaten aktualisiert' });
     await persist(env, db);
-    return json(fullProject(db, id));
+    return json(fullProject(db, id, { userId: user.id, role: m.role }));
   }
 
   return err('Methode nicht erlaubt.', 405);
